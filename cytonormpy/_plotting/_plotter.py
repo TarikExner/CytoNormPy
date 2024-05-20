@@ -192,7 +192,7 @@ class Plotter:
             cnpl = cnp.Plotter(cytonorm = cn)
 
             cnpl.histogram(cn._datahandler.validation_file_names[0],
-                           x_channel = "Nd144Di",
+                           x_channel = "Nd142Di",
                            x_scale = "linear",
                            y_scale = "linear",
                            figsize = (4,4))

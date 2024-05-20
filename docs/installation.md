@@ -9,7 +9,7 @@ With conda installed, open your terminal and create a new environment by executi
 
 ## PyPI
 
-Currently, FACSPy is in beta-phase. There will be a PyPI release once the beta phase is finished.
+Currently, cytonormpy is in beta-phase. There will be a PyPI release once the beta phase is finished.
 
     pip install cytonormpy
 
