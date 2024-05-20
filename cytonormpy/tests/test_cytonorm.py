@@ -4,8 +4,8 @@ from pathlib import Path
 import pandas as pd
 from cytonormpy import CytoNorm
 import cytonormpy as cnp
-from cytonormpy._transformation._transformations import AsinhTransformer, Transformer, HyperLogTransformer
-from cytonormpy._clustering._flowsom import FlowSOM, ClusterBase
+from cytonormpy._transformation._transformations import AsinhTransformer, Transformer
+from cytonormpy._clustering._cluster_algorithms import FlowSOM, ClusterBase
 from cytonormpy._dataset._dataset import DataHandlerFCS, DataHandlerAnnData
 from cytonormpy._cytonorm._cytonorm import ClusterCVWarning
 
