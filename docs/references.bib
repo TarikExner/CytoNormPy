@@ -1,0 +1,125 @@
+@article{coifman2005,
+  title     = "Geometric diffusions as a tool for harmonic analysis and
+               structure definition of data: diffusion maps",
+  author    = "Coifman, R R and Lafon, S and Lee, A B and Maggioni, M and
+               Nadler, B and Warner, F and Zucker, S W",
+  abstract  = "We provide a framework for structural multiscale geometric
+               organization of graphs and subsets of R(n). We use diffusion
+               semigroups to generate multiscale geometries in order to
+               organize and represent complex structures. We show that
+               appropriately selected eigenfunctions or scaling functions of
+               Markov matrices, which describe local transitions, lead to
+               macroscopic descriptions at different scales. The process of
+               iterating or diffusing the Markov matrix is seen as a
+               generalization of some aspects of the Newtonian paradigm, in
+               which local infinitesimal transitions of a system lead to global
+               macroscopic descriptions by integration. We provide a unified
+               view of ideas from data analysis, machine learning, and
+               numerical analysis.",
+  journal   = "Proc. Natl. Acad. Sci. U. S. A.",
+  publisher = "Proceedings of the National Academy of Sciences",
+  volume    =  102,
+  number    =  21,
+  pages     = "7426--7431",
+  month     =  may,
+  year      =  2005,
+  language  = "en"
+}
+
+@article{haghverdi2015,
+  title     = "Diffusion maps for high-dimensional single-cell analysis of
+               differentiation data",
+  author    = "Haghverdi, Laleh and Buettner, Florian and Theis, Fabian J",
+  abstract  = "MOTIVATION: Single-cell technologies have recently gained
+               popularity in cellular differentiation studies regarding their
+               ability to resolve potential heterogeneities in cell
+               populations. Analyzing such high-dimensional single-cell data
+               has its own statistical and computational challenges. Popular
+               multivariate approaches are based on data normalization,
+               followed by dimension reduction and clustering to identify
+               subgroups. However, in the case of cellular differentiation, we
+               would not expect clear clusters to be present but instead expect
+               the cells to follow continuous branching lineages. RESULTS:
+               Here, we propose the use of diffusion maps to deal with the
+               problem of defining differentiation trajectories. We adapt this
+               method to single-cell data by adequate choice of kernel width
+               and inclusion of uncertainties or missing measurement values,
+               which enables the establishment of a pseudotemporal ordering of
+               single cells in a high-dimensional gene expression space. We
+               expect this output to reflect cell differentiation trajectories,
+               where the data originates from intrinsic diffusion-like
+               dynamics. Starting from a pluripotent stage, cells move smoothly
+               within the transcriptional landscape towards more differentiated
+               states with some stochasticity along their path. We demonstrate
+               the robustness of our method with respect to extrinsic noise
+               (e.g. measurement noise) and sampling density heterogeneities on
+               simulated toy data as well as two single-cell quantitative
+               polymerase chain reaction datasets (i.e. mouse haematopoietic
+               stem cells and mouse embryonic stem cells) and an RNA-Seq data
+               of human pre-implantation embryos. We show that diffusion maps
+               perform considerably better than Principal Component Analysis
+               and are advantageous over other techniques for non-linear
+               dimension reduction such as t-distributed Stochastic Neighbour
+               Embedding for preserving the global structures and
+               pseudotemporal ordering of cells. AVAILABILITY AND
+               IMPLEMENTATION: The Matlab implementation of diffusion maps for
+               single-cell data is available at
+               https://www.helmholtz-muenchen.de/icb/single-cell-diffusion-map.
+               CONTACT: fbuettner.phys@gmail.com,
+               fabian.theis@helmholtz-muenchen.de SUPPLEMENTARY INFORMATION:
+               Supplementary data are available at Bioinformatics online.",
+  journal   = "Bioinformatics",
+  publisher = "Oxford University Press (OUP)",
+  volume    =  31,
+  number    =  18,
+  pages     = "2989--2998",
+  month     =  sep,
+  year      =  2015,
+  language  = "en"
+}
+
+@article{haghverdi2016,
+  title    = "Diffusion pseudotime robustly reconstructs lineage branching",
+  author   = "Haghverdi, Laleh and B{\"u}ttner, Maren and Wolf, F Alexander and
+              Buettner, Florian and Theis, Fabian J",
+  abstract = "The temporal order of differentiating cells is intrinsically
+              encoded in their single-cell expression profiles. We describe an
+              efficient way to robustly estimate this order according to
+              diffusion pseudotime (DPT), which measures transitions between
+              cells using diffusion-like random walks. Our DPT software
+              implementations make it possible to reconstruct the developmental
+              progression of cells and identify transient or metastable states,
+              branching decisions and differentiation endpoints.",
+  journal  = "Nat. Methods",
+  volume   =  13,
+  number   =  10,
+  pages    = "845--848",
+  month    =  oct,
+  year     =  2016,
+  language = "en"
+}
+
+@article{wolf2018,
+  title    = "{SCANPY}: large-scale single-cell gene expression data analysis",
+  author   = "Wolf, F Alexander and Angerer, Philipp and Theis, Fabian J",
+  abstract = "SCANPY is a scalable toolkit for analyzing single-cell gene
+              expression data. It includes methods for preprocessing,
+              visualization, clustering, pseudotime and trajectory inference,
+              differential expression testing, and simulation of gene
+              regulatory networks. Its Python-based implementation efficiently
+              deals with data sets of more than one million cells (
+              https://github.com/theislab/Scanpy ). Along with SCANPY, we
+              present ANNDATA, a generic class for handling annotated data
+              matrices ( https://github.com/theislab/anndata ).",
+  journal  = "Genome Biol.",
+  volume   =  19,
+  number   =  1,
+  pages    = "15",
+  month    =  feb,
+  year     =  2018,
+  keywords = "Bioinformatics; Clustering; Differential expression testing;
+              Graph analysis; Machine learning; Pseudotemporal ordering;
+              Scalability; Single-cell transcriptomics; Trajectory inference;
+              Visualization",
+  language = "en"
+}
