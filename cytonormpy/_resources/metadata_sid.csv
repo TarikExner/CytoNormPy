@@ -1,0 +1,7 @@
+file_name,reference,batch,sample_ID
+Gates_PTLG021_Unstim_Control_1.fcs,ref,1,1
+Gates_PTLG021_Unstim_Control_2.fcs,other,1,2
+Gates_PTLG028_Unstim_Control_1.fcs,ref,2,3
+Gates_PTLG028_Unstim_Control_2.fcs,other,2,4
+Gates_PTLG034_Unstim_Control_1.fcs,ref,3,5
+Gates_PTLG034_Unstim_Control_2.fcs,other,3,6
