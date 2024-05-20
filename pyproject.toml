@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cytonormpy"
+version = "0.0.1"
+authors = [
+  { name="Tarik Exner", email="Tarik.Exner@med.uni-heidelberg.de" },
+]
+description = "CytoNorm for python"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "anndata",
+    "numpy",
+    "scipy",
+    "pandas",
+    "flowio",
+    "flowutils",
+    "flowsom@git+https://github.com/TarikExner/FlowSOM_Python.git@pip_issue",
+
+    ##
+    "sphinx>=4",
+    "sphinx-book-theme>=1.0.0",
+    "sphinxcontrib-bibtex>=1.0.0",
+    "sphinx-autodoc-typehints",
+    "nbsphinx",
+    "nbsphinx-link",
+    "pandoc",
+    "myst_parser"
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+#[project.urls]
+#"Homepage" = "http://www.google.de/"
+#"Bug Tracker" = "https://github.com/"
