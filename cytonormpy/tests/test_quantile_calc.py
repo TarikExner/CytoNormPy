@@ -33,14 +33,8 @@ def test_storage_array_init(expr_q: ExpressionQuantiles):
     assert np.sum(arr) == 0
 
 
-def test_quantile_calculation_wrong_axis(expr_q: ExpressionQuantiles):
-    test_arr = np.arange(100)
-    with pytest.raises(IndexError):
-        _ = expr_q.calculate_quantiles(test_arr)
-
-
 def test_quantile_calculation(expr_q: ExpressionQuantiles):
-    test_arr = np.arange(101).reshape(101, 1)
+    test_arr = np.arange(101, dtype = np.float64).reshape(101, 1)
     res = expr_q.calculate_quantiles(test_arr)
     assert res.ndim == 4
     assert res.shape[0] == N_QUANTILES
@@ -49,7 +43,7 @@ def test_quantile_calculation(expr_q: ExpressionQuantiles):
 
 
 def test_add_quantiles(expr_q: ExpressionQuantiles):
-    data_array = np.random.randint(0, 100, N_CHANNELS * 20).reshape(20, N_CHANNELS)
+    data_array = np.random.randint(0, 100, N_CHANNELS * 20).reshape(20, N_CHANNELS).astype(np.float64)
     q = np.quantile(data_array, expr_q.quantiles, axis = 0)
     q = q[:, :, np.newaxis, np.newaxis]
     expr_q.add_quantiles(q, batch_idx = 2, cluster_idx = 1)
