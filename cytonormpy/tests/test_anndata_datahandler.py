@@ -63,42 +63,6 @@ def test_get_dataframe(datahandleranndata: DataHandlerAnnData,
     assert df.shape == (1000, 53)
     assert "file_name" not in df.columns
 
-    df = dh.get_dataframe(req_file, raw = True)
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 55)
-    assert "file_name" not in df.columns
-
-    df = dh.get_dataframe(req_file, raw = True, annot_file_name = True)
-    assert dh._sample_identifier_column == "file_name"
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 55 + 1)
-    assert "file_name" in df.columns
-
-    df = dh.get_dataframe(req_file, raw = False, annot_file_name = True)
-    assert dh._sample_identifier_column == "file_name"
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 53 + 1)
-    assert "file_name" in df.columns
-
-
-def test_ad_to_df(datahandleranndata: DataHandlerAnnData,
-                  metadata: pd.DataFrame):
-    dh = datahandleranndata
-    req_file = metadata["file_name"].tolist()[0]
-    df = dh._ad_to_df(file_name = req_file)
-    assert isinstance(df, pd.DataFrame)
-    assert "reference" in df.index.names
-    assert "batch" in df.index.names
-    assert dh._sample_identifier_column in df.index.names
-    assert df.shape == (1000, 55)  # original data, no subset
-    df = df.reset_index()
-    assert all(
-        k in df.columns
-        for k in [dh._reference_column, dh._batch_column,
-                  dh._sample_identifier_column]
-    )
-    assert df.shape[0] == 1000
-
 
 def test_write_anndata(datahandleranndata: DataHandlerAnnData,
                        metadata: pd.DataFrame):

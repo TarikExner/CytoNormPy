@@ -5,36 +5,6 @@ import numpy as np
 from pathlib import Path
 from flowio import FlowData
 from cytonormpy._dataset._dataset import DataHandlerFCS
-from cytonormpy._dataset._fcs_file import FCSFile
-
-
-def test_attribute_assignments(metadata: pd.DataFrame,
-                               INPUT_DIR: Path):
-    dh = DataHandlerFCS(metadata = metadata,
-                        input_directory = INPUT_DIR)
-    assert metadata.equals(dh._metadata)
-    assert dh._input_dir == INPUT_DIR
-    assert dh._reference_column == "reference"
-    assert dh._batch_column == "batch"
-    assert dh._sample_identifier_column == "file_name"
-    assert dh._reference_value == "ref"
-    assert isinstance(dh.ref_data_df, pd.DataFrame)
-    assert dh._truncate_max_range is True
-    assert isinstance(dh.channels, list)
-    assert dh._output_dir == INPUT_DIR
-
-
-def test_create_ref_data_df(datahandlerfcs: DataHandlerFCS):
-    dh = datahandlerfcs
-    df = dh._create_ref_data_df()
-    assert isinstance(df, pd.DataFrame)
-    df = df.reset_index()
-    assert all(
-        k in df.columns
-        for k in [dh._reference_column, dh._batch_column,
-                  dh._sample_identifier_column]
-    )
-    assert df.shape[0] == 3000
 
 
 def test_get_dataframe(datahandlerfcs: DataHandlerFCS,
@@ -45,56 +15,6 @@ def test_get_dataframe(datahandlerfcs: DataHandlerFCS,
     assert isinstance(df, pd.DataFrame)
     assert df.shape == (1000, 53)
     assert "file_name" not in df.columns
-
-    df = dh.get_dataframe(req_file, raw = True)
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 55)
-    assert "file_name" not in df.columns
-
-    df = dh.get_dataframe(req_file, raw = True, annot_file_name = True)
-    assert dh._sample_identifier_column == "file_name"
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 55 + 1)
-    assert "file_name" in df.columns
-
-    df = dh.get_dataframe(req_file, raw = False, annot_file_name = True)
-    assert dh._sample_identifier_column == "file_name"
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 53 + 1)
-    assert "file_name" in df.columns
-
-
-def test_fcs_to_df(datahandlerfcs: DataHandlerFCS,
-                   metadata: pd.DataFrame):
-    dh = datahandlerfcs
-    req_file = metadata["file_name"].tolist()[0]
-    df = dh._fcs_to_df(file_name = req_file)
-    assert isinstance(df, pd.DataFrame)
-    assert "reference" in df.index.names
-    assert "batch" in df.index.names
-    assert "file_name" in df.index.names
-    assert df.shape == (1000, 55)  # original data, no subset
-    df = df.reset_index()
-    assert all(
-        k in df.columns
-        for k in [dh._reference_column,
-                  dh._batch_column,
-                  dh._sample_identifier_column]
-    )
-    assert df.shape[0] == 1000
-
-
-def test_read_fcs_file(datahandlerfcs: DataHandlerFCS,
-                       metadata: pd.DataFrame):
-    dh = datahandlerfcs
-    req_file = metadata["file_name"].tolist()[0]
-    fcs = dh._read_fcs_file(req_file)
-    df = fcs.to_df()
-    assert isinstance(fcs, FCSFile)
-    assert isinstance(fcs.channels, pd.DataFrame)
-    assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1000, 55)
-
 
 def test_read_metadata_from_path(tmp_path,
                                  metadata: pd.DataFrame,
@@ -139,7 +59,10 @@ def test_write_fcs(tmp_path,
     fcs = FlowData(os.path.join(INPUT_DIR, req_file))
     original_data = np.reshape(np.array(fcs.events),
                                (-1, fcs.channel_count))
-    ch_spec_data = original_data[:, dh._channel_indices]
+    ch_spec_data = pd.DataFrame(data = original_data,
+                                columns = dh._all_detectors,
+                                index = list(range(original_data.shape[0])))
+    ch_spec_data = pd.DataFrame(ch_spec_data[dh.channels])
 
     dh.write(req_file,
              output_dir = tmp_path,

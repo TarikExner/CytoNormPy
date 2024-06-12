@@ -8,8 +8,8 @@ def test_spline_func():
     # we want to test if the R-function and the
     # python equivalent behave similarly.
 
-    x = np.array([1, 4, 6, 12, 17, 20])
-    y = np.array([0.7, 4.5, 8.2, 11.4, 17, 21.2])
+    x = np.array([1, 4, 6, 12, 17, 20], dtype = np.float64)
+    y = np.array([0.7, 4.5, 8.2, 11.4, 17, 21.2], dtype = np.float64)
 
     s = Spline(
         batch = 1,

@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from anndata import AnnData
 from flowio import FlowData
+from flowio.exceptions import FCSParsingError
+import warnings
 
 from typing import Union, Optional, Literal
 
@@ -11,6 +13,11 @@ from .._utils._utils import (_all_batches_have_reference,
                              _conclusive_reference_values)
 
 from ._fcs_file import FCSFile
+from ._dataprovider import (DataProviderFCS,
+                            DataProviderAnnData,
+                            DataProvider)
+from ._datareader import (DataReaderFCS)
+from .._transformation._transformations import Transformer
 
 from abc import abstractmethod
 
@@ -30,45 +37,87 @@ class DataHandler:
         "event_length", "width", "height", "center",
         "residual", "offset", "amplitude", "dna1", "dna2"
     ]
-    _all_detectors = []
 
-    ref_file_names = []
-    validation_file_names = []
-
-    _metadata = pd.DataFrame()
-
-    _reference_column = ""
-    _reference_value = ""
-    _batch_column = ""
-    _sample_identifier_column = ""
 
     def __init__(self,
                  channels: Union[list[str], str, Literal["all", "markers"]],
-                 ref_data_df: pd.DataFrame):
-        self._all_detectors = ref_data_df.columns.tolist()
+                 provider: DataProvider,
+                 reference_column: str,
+                 reference_value: str,
+                 batch_column: str,
+                 sample_identifier_column: str,
+                 metadata: pd.DataFrame):
+
+        self._init_metadata_columns(
+            reference_column = reference_column,
+            reference_value = reference_value,
+            batch_column = batch_column,
+            sample_identifier_column = sample_identifier_column
+        )
+
+        self._validate_metadata_table(metadata)
+        self._validate_batch_references(metadata)
+
+        self._metadata = metadata
+
+        self.ref_file_names = self._get_reference_file_names()
+        self.validation_file_names = self._get_validation_file_names()
+        self.all_file_names = self.ref_file_names + self.validation_file_names
+
+        self._provider = provider
+
+        self.ref_data_df = self._create_ref_data_df()
+
+        self._all_detectors = self.ref_data_df.columns.tolist()
         _channel_user_input = channels
         self.channels: list[str] = self._select_channels(_channel_user_input)
 
         self._channel_indices = self._find_channel_indices()
 
-        self.ref_data_df = ref_data_df[self.channels]
-
-        self._all_file_names = self.ref_file_names + self.validation_file_names
-
     @abstractmethod
-    def _create_ref_data_df(self) -> pd.DataFrame:
+    def write(self,
+              file_name: str,
+              data: pd.DataFrame) -> None:
         pass
 
-    @abstractmethod
-    def _get_reference_data_array(self) -> np.ndarray:
-        pass
+    @property
+    def flow_technicals(self):
+        return self._flow_technicals
 
-    @abstractmethod
-    def get_dataframe(self,
-                      file_name: str,
-                      raw: bool = False,
-                      annot_file_name: bool = False) -> pd.DataFrame:
-        pass
+    @flow_technicals.setter
+    def flow_technicals(self,
+                        technicals: list[str]):
+        self._flow_technicals = technicals
+
+    def append_flow_technicals(self,
+                               value):
+        self.flow_technicals.append(value)
+
+    @property
+    def spectral_flow_technicals(self):
+        return self._spectral_flow_technicals
+
+    @spectral_flow_technicals.setter
+    def spectral_flow_technicals(self,
+                                 technicals: list[str]):
+        self._spectral_flow_technicals = technicals
+
+    def append_spectral_flow_technicals(self,
+                                        value):
+        self.spectral_flow_technicals.append(value)
+
+    @property
+    def cytof_technicals(self):
+        return self._cytof_technicals
+
+    @cytof_technicals.setter
+    def cytof_technicals(self,
+                         technicals: list[str]):
+        self._cytof_technicals = technicals
+
+    def append_cytof_technicals(self,
+                                value):
+        self.cytof_technicals.append(value)
 
     def _init_metadata_columns(self,
                                reference_column: str,
@@ -80,24 +129,7 @@ class DataHandler:
         self._batch_column = batch_column
         self._sample_identifier_column = sample_identifier_column
 
-    def _append_metadata_to_df(self,
-                               df: pd.DataFrame,
-                               file_name: str) -> pd.DataFrame:
-        ref_value = self._metadata.loc[
-            self._metadata[self._sample_identifier_column] == file_name,
-            self._reference_column
-        ].iloc[0]
-
-        batch_value = self._metadata.loc[
-            self._metadata[self._sample_identifier_column] == file_name,
-            self._batch_column
-        ].iloc[0]
-
-        df[self._reference_column] = ref_value
-        df[self._batch_column] = batch_value
-        df[self._sample_identifier_column] = file_name
-
-        return df
+        return
 
     def get_batch(self,
                   file_name: str) -> str:
@@ -122,26 +154,38 @@ class DataHandler:
             self._sample_identifier_column
         ].iloc[0]
 
+    def get_dataframe(self,
+                      file_name: str) -> pd.DataFrame:
+        """
+        Returns a dataframe for the indicated file name.
+
+        Parameters
+        ----------
+        file_name
+            The file_name of the file being read.
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the expression data.
+        """
+
+        return self._provider.prep_dataframe(file_name)
+
     def get_corresponding_ref_dataframe(self,
-                                        file_name: str,
-                                        raw: bool = False,
-                                        annot_file_name: bool = False
-                                        ) -> pd.DataFrame:
+                                        file_name: str) -> pd.DataFrame:
         corresponding_reference_file = \
             self._find_corresponding_reference_file(file_name)
-        return self.get_dataframe(file_name = corresponding_reference_file,
-                                  raw = raw,
-                                  annot_file_name = annot_file_name)
+        return self.get_dataframe(file_name = corresponding_reference_file)
 
-    @abstractmethod
-    def write(self,
-              file_name: str,
-              data: np.ndarray) -> None:
-        pass
 
-    def get_ref_data_df(self) -> pd.DataFrame:
-        assert isinstance(self.ref_data_df, pd.DataFrame)
-        return self.ref_data_df
+    def _create_ref_data_df(self) -> pd.DataFrame:
+        return pd.concat(
+            [
+                self._provider.prep_dataframe(file)
+                for file in self.ref_file_names
+            ],
+            axis = 0
+        )
 
     def get_ref_data_df_subsampled(self,
                                    n: int):
@@ -152,6 +196,10 @@ class DataHandler:
                       df: pd.DataFrame,
                       n: int):
         return df.sample(n = n, axis = 0, random_state = 187)
+
+    def get_ref_data_df(self) -> pd.DataFrame:
+        assert isinstance(self.ref_data_df, pd.DataFrame)
+        return self.ref_data_df
 
     def _select_channels(self,
                          user_input: Union[list[str], str, Literal["all", "markers"]]  # noqa
@@ -177,9 +225,25 @@ class DataHandler:
         return [ch for ch in detectors if ch.lower() not in exclude]
 
     def _find_channel_indices(self) -> np.ndarray:
+        detectors = self._all_detectors
         return np.array(
-            [i for i, ch in enumerate(self._all_detectors)
-             if ch in self.channels]
+            [
+                detectors.index(ch) for ch in detectors
+                if ch in self.channels
+            ]
+        )
+
+    def _find_channel_indices_of_fcs(self,
+                                     pnn_labels: list[str],
+                                     channel_numbers: list[int],
+                                     data_columns: pd.Index):
+        sorted_idxs = np.argsort(channel_numbers)
+        pnn_labels = list(np.array(pnn_labels)[sorted_idxs])
+        return np.array(
+            [
+                pnn_labels.index(col)
+                for col in data_columns.tolist()
+            ]
         )
 
     def _get_reference_file_names(self) -> list[str]:
@@ -226,60 +290,6 @@ class DataHandler:
                 "All batches must have reference samples."
             )
 
-    def _subsample_array(self,
-                         data: np.ndarray,
-                         n: int) -> np.ndarray:
-        idxs = np.random.choice(data.shape[0], n, replace = False)
-        return data[idxs]
-
-    def _subsample_reference_data(self,
-                                  n_cells: Optional[int]) -> np.ndarray:
-
-        ref_data_array = self._get_reference_data_array()
-
-        if n_cells is None:
-            return ref_data_array
-
-        return self._subsample_array(ref_data_array, n_cells)
-
-    @property
-    def flow_technicals(self):
-        return self._flow_technicals
-
-    @flow_technicals.setter
-    def flow_technicals(self,
-                        technicals: list[str]):
-        self._flow_technicals = technicals
-
-    def append_flow_technicals(self,
-                               value):
-        self.flow_technicals.append(value)
-
-    @property
-    def spectral_flow_technicals(self):
-        return self._spectral_flow_technicals
-
-    @spectral_flow_technicals.setter
-    def spectral_flow_technicals(self,
-                                 technicals: list[str]):
-        self._spectral_flow_technicals = technicals
-
-    def append_spectral_flow_technicals(self,
-                                        value):
-        self.spectral_flow_technicals.append(value)
-
-    @property
-    def cytof_technicals(self):
-        return self._cytof_technicals
-
-    @cytof_technicals.setter
-    def cytof_technicals(self,
-                         technicals: list[str]):
-        self._cytof_technicals = technicals
-
-    def append_cytof_technicals(self,
-                                value):
-        self.cytof_technicals.append(value)
 
 
 class DataHandlerFCS(DataHandler):
@@ -300,6 +310,11 @@ class DataHandlerFCS(DataHandler):
         Path specifying the input directory in which the
         .fcs files are stored. If left None, the current
         working directory is assumed.
+    channels
+        Can be a list of detectors (e.g. BV421-A), a single
+        channel or 'all' or 'markers'. If `markers`, channels
+        containing 'FSC', 'SSC', 'Time', 'AF' and CyTOF technicals
+        will be excluded.
     reference_column
         The column in the metadata that specifies whether a sample
         is used for reference and is therefore present in all batches.
@@ -313,11 +328,6 @@ class DataHandlerFCS(DataHandler):
     sample_identifier_column
         Specifies the column in the metadata that is unique to the samples.
         Defaults to 'file_name'.
-    channels
-        Can be a list of detectors (e.g. BV421-A), a single
-        channel or 'all' or 'markers'. If `markers`, channels
-        containing 'FSC', 'SSC', 'Time', 'AF' and CyTOF technicals
-        will be excluded.
     output_directory
         Path specifying the output directory in which the
         .fcs files are saved to. If left None, the current
@@ -335,128 +345,52 @@ class DataHandlerFCS(DataHandler):
     def __init__(self,
                  metadata: Union[pd.DataFrame, PathLike],
                  input_directory: Optional[PathLike] = None,
+                 channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
                  reference_column: str = "reference",
                  reference_value: str = "ref",
                  batch_column: str = "batch",
                  sample_identifier_column: str = "file_name",
-                 channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
+                 transformer: Optional[Transformer] = None,
                  truncate_max_range: bool = True,
                  output_directory: Optional[PathLike] = None,
                  prefix: str = "Norm"
                  ) -> None:
+
         self._input_dir = input_directory or os.getcwd()
         self._output_dir = output_directory or input_directory
         self._prefix = prefix
 
-        self._init_metadata_columns(
+        if isinstance(metadata, pd.DataFrame):
+            _metadata = metadata
+        else:
+            _metadata = self._read_metadata(metadata)
+
+
+        _provider = DataProviderFCS(
+            input_directory = self._input_dir,
+            truncate_max_range = truncate_max_range,
+            sample_identifier_column = sample_identifier_column,
+            reference_column = reference_column,
+            batch_column = batch_column,
+            metadata = _metadata,
+            channels = None, # instantiate with None as we dont know the channels yet
+            transformer = transformer
+        )
+
+
+        super().__init__(
+            channels = channels,
+            provider = _provider,
             reference_column = reference_column,
             reference_value = reference_value,
             batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column
+            sample_identifier_column = sample_identifier_column,
+            metadata = _metadata
         )
 
-        if isinstance(metadata, pd.DataFrame):
-            self._metadata = metadata
-        else:
-            self._metadata = self._read_metadata(metadata)
+        self._provider.channels = self.channels
+        self.ref_data_df = self._provider.select_channels(self.ref_data_df)
 
-        self._validate_metadata_table(self._metadata)
-        self._validate_batch_references(self._metadata)
-
-        self.ref_file_names = self._get_reference_file_names()
-        self.validation_file_names = self._get_validation_file_names()
-
-        self._truncate_max_range = truncate_max_range
-        ref_data_df = self._create_ref_data_df()
-
-        super().__init__(channels = channels,
-                         ref_data_df = ref_data_df)
-
-    def _create_ref_data_df(self) -> pd.DataFrame:
-        return pd.concat(
-            [
-                self._fcs_to_df(file)
-                for file in
-                self._get_reference_file_names()
-            ]
-        )
-
-    def get_dataframe(self,
-                      file_name: str,
-                      raw: bool = False,
-                      annot_file_name: bool = False) -> pd.DataFrame:
-        """
-        Returns a dataframe for the indicated file name.
-
-        Parameters
-        ----------
-        file_name
-            The file_name of the file being read.
-        raw
-            If True, returns full frame, otherwise subset
-            for self.channels
-        annot_file_name
-            If True, appends a column with the file name
-            using the sample identifier column used at
-            setup.
-
-        Returns
-        -------
-        A :class:`pandas.DataFrame` containing the expression data.
-        """
-        df = self._fcs_to_df(file_name)
-        if raw is True:
-            if annot_file_name:
-                df[self._sample_identifier_column] = file_name
-                return df
-            return df
-        df = df[self.channels]
-        if annot_file_name:
-            df[self._sample_identifier_column] = file_name
-        assert isinstance(df, pd.DataFrame)
-        return df
-
-    def _fcs_to_df(self,
-                   file_name) -> pd.DataFrame:
-        """\
-        Returns a DataFrame from an .fcs file.
-        All channels are included and metadata ref and batch
-        are appended and set as the index.
-        """
-        fcs = self._read_fcs_file(
-            file_name = file_name,
-        )
-        df = fcs.to_df()
-        df = self._append_metadata_to_df(df = df,
-                                         file_name = file_name)
-
-        assert all(k in df.columns for k in [self._reference_column,
-                                             self._batch_column,
-                                             self._sample_identifier_column])
-        df = df.set_index(
-            [
-                self._reference_column,
-                self._batch_column,
-                self._sample_identifier_column
-            ]
-        )
-
-        return df
-
-    def _assert_panel_equal(self) -> bool:
-        """
-        checks panels of .fcs files to see if they are
-        identical
-        """
-        return True
-
-    def _read_fcs_file(self,
-                       file_name: str) -> FCSFile:
-        return FCSFile(
-            input_directory = self._input_dir,
-            file_name = file_name,
-            truncate_max_range = self._truncate_max_range
-        )
 
     def _read_metadata(self,
                        path: PathLike) -> pd.DataFrame:
@@ -464,7 +398,7 @@ class DataHandlerFCS(DataHandler):
 
     def write(self,
               file_name: str,
-              data: np.ndarray,
+              data: pd.DataFrame,
               output_dir: Optional[PathLike] = None) -> None:
         """\
         Writes the data to the hard drive as an .fcs file.
@@ -491,10 +425,40 @@ class DataHandlerFCS(DataHandler):
             new_file_path = os.path.join(
                 self._output_dir, f"{self._prefix}_{file_name}"
             )
-        fcs = FlowData(file_path)
-        orig_events = np.reshape(np.array(fcs.events),
-                                 (-1, fcs.channel_count))
-        orig_events[:, self._channel_indices] = data
+
+        """function to load the fcs from the hard drive"""
+        try:
+            ignore_offset_error = False
+            fcs = FlowData(
+                file_path,
+                ignore_offset_error
+            )
+        except FCSParsingError:
+            ignore_offset_error = False
+            warnings.warn(
+                "CytoNormPy IO: FCS file could not be read with "
+                f"ignore_offset_error set to {ignore_offset_error}. "
+                "Parameter is set to True."
+            )
+            fcs = FlowData(
+                file_path,
+                ignore_offset_error = True
+            )
+        channels: dict = fcs.channels
+        pnn_labels = [
+            channels[channel_number]["PnN"]
+            for channel_number in channels
+        ]
+        channel_numbers = [int(k) for k in channels]
+        channel_indices = self._find_channel_indices_of_fcs(pnn_labels,
+                                                            channel_numbers,
+                                                            data.columns)
+        orig_events = np.reshape(
+            np.array(fcs.events),
+            (-1, fcs.channel_count)
+        )
+        inv_transformed: pd.DataFrame = self._provider.inverse_transform_data(data)
+        orig_events[:, channel_indices] = inv_transformed.values
         fcs.events = orig_events.flatten()  # type: ignore
         fcs.write_fcs(new_file_path, metadata = fcs.text)
 
@@ -544,17 +508,11 @@ class DataHandlerAnnData(DataHandler):
                  batch_column: str,
                  sample_identifier_column: str,
                  channels: Union[list[str], str, Literal["all", "marker"]],
+                 transformer: Optional[Transformer] = None,
                  key_added: str = "cyto_normalized"):
         self.adata = adata
         self._layer = layer
         self._key_added = key_added
-
-        self._init_metadata_columns(
-            reference_column = reference_column,
-            reference_value = reference_value,
-            batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column
-        )
 
         # We copy the input data to the newly created layer
         # to ensure that non-normalized data stay as the input
@@ -562,31 +520,38 @@ class DataHandlerAnnData(DataHandler):
             self.adata.layers[self._key_added] = \
                 np.array(self.adata.layers[self._layer])
 
-        self._metadata = self._condense_metadata(self.adata.obs,
-                                                 reference_column,
-                                                 batch_column,
-                                                 sample_identifier_column)
+        _metadata = self._condense_metadata(
+            self.adata.obs,
+            reference_column,
+            batch_column,
+            sample_identifier_column
+        )
 
-        self._validate_metadata_table(self._metadata)
-        self._validate_batch_references(self._metadata)
+        _provider = DataProviderAnnData(
+            adata = adata,
+            layer = layer,
+            sample_identifier_column = sample_identifier_column,
+            reference_column = reference_column,
+            batch_column = batch_column,
+            metadata = _metadata,
+            channels = None, # instantiate with None as we dont know the channels yet
+            transformer = transformer
+        )
 
-        self.ref_file_names = self._get_reference_file_names()
-        self.validation_file_names = self._get_validation_file_names()
+        super().__init__(
+            channels = channels,
+            provider = _provider,
+            reference_column = reference_column,
+            reference_value = reference_value,
+            batch_column = batch_column,
+            sample_identifier_column = sample_identifier_column,
+            metadata = _metadata
+        )
 
-        ref_data_df = self._create_ref_data_df()
-        super().__init__(channels = channels,
-                         ref_data_df = ref_data_df)
+        self._provider.channels = self.channels
+        self.ref_data_df = self._provider.select_channels(self.ref_data_df)
 
         # TODO: add check for anndata obs
-
-    def _create_ref_data_df(self) -> pd.DataFrame:
-        return pd.concat(
-            [
-                self._ad_to_df(file)
-                for file in
-                self._get_reference_file_names()
-            ]
-        )
 
     def _condense_metadata(self,
                            obs: pd.DataFrame,
@@ -600,66 +565,9 @@ class DataHandlerAnnData(DataHandler):
         assert isinstance(df, pd.DataFrame)
         return df
 
-    def get_dataframe(self,
-                      file_name: str,
-                      raw: bool = False,
-                      annot_file_name: bool = False) -> pd.DataFrame:
-        """
-        Returns a dataframe for the indicated file name.
-
-        Parameters
-        ----------
-        file_name
-            The file_name of the file being read.
-        raw
-            If True, returns full frame, otherwise subset
-            for self.channels
-        annot_file_name
-            If True, appends a column with the file name
-            using the sample identifier column used at
-            setup.
-
-        Returns
-        -------
-        A :class:`pandas.DataFrame` containing the expression data.
-
-        """
-        df = self._ad_to_df(file_name)
-        if raw is True:
-            if annot_file_name:
-                df[self._sample_identifier_column] = file_name
-                return df
-            return df
-        df = df[self.channels]
-        if annot_file_name:
-            df[self._sample_identifier_column] = file_name
-        assert isinstance(df, pd.DataFrame)
-        return df
-
-    def _ad_to_df(self,
-                  file_name: str):
-        df = self.adata[
-            self.adata.obs[self._sample_identifier_column] == file_name,
-            :
-        ].to_df(layer = self._layer)
-        df = self._append_metadata_to_df(df = df,
-                                         file_name = file_name)
-
-        assert all(k in df.columns for k in [self._reference_column,
-                                             self._batch_column])
-        df = df.set_index(
-            [
-                self._reference_column,
-                self._batch_column,
-                self._sample_identifier_column
-            ]
-        )
-
-        return df
-
     def write(self,
               file_name: str,
-              data: np.ndarray) -> None:
+              data: pd.DataFrame) -> None:
         """\
         Writes the data to the anndata object to the layer
         specified during setup.

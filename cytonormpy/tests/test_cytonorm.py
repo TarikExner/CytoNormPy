@@ -46,7 +46,8 @@ def test_clusterer_addition():
     assert hasattr(cn, "_clustering")
     assert isinstance(cn._clustering, FlowSOM)
     assert isinstance(cn._clustering, ClusterBase)
-    assert not hasattr(cn, "_transformer")
+    assert hasattr(cn, "_transformer")
+    assert cn._transformer is None
 
 
 def test_run_clustering(data_anndata: AnnData):
