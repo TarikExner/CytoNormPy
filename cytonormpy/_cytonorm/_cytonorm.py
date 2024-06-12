@@ -5,6 +5,9 @@ import numpy as np
 from anndata import AnnData
 import warnings
 
+from multiprocessing import Pool
+import concurrent.futures as cf
+
 from ._utils import _all_cvs_below_cutoff
 
 from .._dataset._dataset import (DataHandlerFCS,
@@ -63,16 +66,17 @@ class CytoNorm:
     >>> import cytonormpy as cnp
     >>>
     >>> cn = CytoNorm()
-    >>> cn.run_fcs_data_setup("metadata.csv")
-    >>>
-    >>> # equivalently for the use of anndata:
-    >>> cn.run_anndata_setup(adata)
     >>>
     >>> transformer = cnp.AsinhTransformer(cofactors = 5)
     >>> cn.add_transformer(transformer)
     >>>
     >>> clusterer = cnp.FlowSOM(**flowsom_kwargs)
     >>> cn.add_clusterer(clusterer)
+    >>>
+    >>> cn.run_fcs_data_setup("metadata.csv")
+    >>>
+    >>> # equivalently for the use of anndata:
+    >>> cn.run_anndata_setup(adata)
     >>>
     >>> cn.run_clustering(n_cells = 6000,
     ...                   test_cluster_cv = True)
@@ -86,7 +90,8 @@ class CytoNorm:
     """
 
     def __init__(self) -> None:
-        pass
+        self._transformer = None
+        self._clustering = None
 
     def run_fcs_data_setup(self,
                            metadata: Union[pd.DataFrame, PathLike],
@@ -96,6 +101,7 @@ class CytoNorm:
                            batch_column: str = "batch",
                            sample_identifier_column: str = "file_name",
                            channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
+                           truncate_max_range: bool = True,
                            output_directory: Optional[PathLike] = None,
                            prefix: str = "Norm"
                            ) -> None:
@@ -155,6 +161,8 @@ class CytoNorm:
             reference_value = reference_value,
             batch_column = batch_column,
             sample_identifier_column = sample_identifier_column,
+            transformer = self._transformer,
+            truncate_max_range = truncate_max_range,
             output_directory = output_directory,
             prefix = prefix
         )
@@ -292,8 +300,6 @@ class CytoNorm:
 
         # we switch to numpy
         train_data = train_data_df.to_numpy(copy = True)
-        if self._transformer is not None:
-            train_data = self._transformer.transform(train_data)
 
         self._clustering.train(X = train_data,
                                **kwargs)
@@ -301,19 +307,15 @@ class CytoNorm:
         ref_data_df = self._datahandler.get_ref_data_df()
 
         # we switch to numpy
-        ref_data = ref_data_df.to_numpy(copy = True)
-        ref_data = self._transformer.transform(ref_data)
+        ref_data_array = ref_data_df.to_numpy(copy = True)
 
-        ref_data_df["clusters"] = self._clustering.calculate_clusters(X = ref_data)
+        ref_data_df["clusters"] = self._clustering.calculate_clusters(X = ref_data_array)
         ref_data_df = ref_data_df.set_index("clusters", append = True)
 
         # we give it back to the data handler
         self._datahandler.ref_data_df = ref_data_df
 
         if test_cluster_cv:
-            df = self._datahandler.get_ref_data_df()
-            df = df.reset_index()
-            df = df[["clusters", "file_name"]]
             appropriate = _all_cvs_below_cutoff(
                 df = self._datahandler.get_ref_data_df(),
                 sample_key = self._datahandler._sample_identifier_column,
@@ -331,7 +333,7 @@ class CytoNorm:
 
     def calculate_quantiles(self,
                             n_quantiles: int = 101,
-                            min_cells: int = 101,
+                            min_cells: int = 50,
                             ) -> None:
         """\
         Calculates quantiles per batch, metacluster and sample.
@@ -352,32 +354,33 @@ class CytoNorm:
         None. Quantiles will be saved and used for later analysis.
 
         """
-        quantiles = np.linspace(0, 100, n_quantiles) / 100
 
         ref_data_df: pd.DataFrame = self._datahandler.get_ref_data_df()
+
         if "clusters" not in ref_data_df.index.names:
             warnings.warn("No Clusters have been found.", UserWarning)
             ref_data_df["clusters"] = -1
             ref_data_df = ref_data_df.set_index("clusters", append = True)
 
-        # lookups on sorted DataFrames are supposedly faster :)
-
-        batches = ref_data_df.index \
+        batches = sorted(
+            ref_data_df.index \
             .get_level_values("batch") \
             .unique() \
             .tolist()
-        clusters = ref_data_df.index \
+        )
+        clusters = sorted(
+            ref_data_df.index \
             .get_level_values("clusters") \
             .unique() \
             .tolist()
+        )
         channels = ref_data_df.columns.tolist()
 
         self.batches = batches
         self.clusters = clusters
         self.channels = channels
 
-        n_channels = ref_data_df.shape[1]
-        n_quantiles = quantiles.shape[0]
+        n_channels = len(ref_data_df.columns)
         n_batches = len(batches)
         n_clusters = len(clusters)
 
@@ -456,7 +459,7 @@ class CytoNorm:
         expr_quantiles = self._expr_quantiles
 
         # we now create the goal distributions with shape
-        # n_channels x n_quantiles x n_metaclusters x 1
+        # n_channels x n_quantles x n_metaclusters x 1
         self._goal_distrib = GoalDistribution(expr_quantiles, goal = goal)
         goal_distrib = self._goal_distrib
 
@@ -500,12 +503,14 @@ class CytoNorm:
 
     def _transform_file(self,
                         df: pd.DataFrame,
-                        batch: str) -> np.ndarray:
+                        batch: str) -> pd.DataFrame:
 
         data = df.to_numpy(copy = True)
-        transformed = self._transformer.transform(data)
-
-        df["clusters"] = self._clustering.calculate_clusters(transformed)
+        
+        if self._clustering is not None:
+            df["clusters"] = self._clustering.calculate_clusters(data)
+        else:
+            df["clusters"] = -1
         df = df.set_index("clusters", append = True)
         df = df.sort_index(level = "clusters")
 
@@ -533,33 +538,48 @@ class CytoNorm:
                     batch = batch,
                     cluster = cluster,
             )
+        return pd.DataFrame(
+            data = expr_data,
+            columns = df.columns,
+            index = df.index
+        )
 
-        return expr_data
+    def _run_transformation(self,
+                            file: str) -> None:
+        df = self._datahandler.get_dataframe(file_name = file)
 
-    def transform_data(self) -> None:
+        batch = self._datahandler.get_batch(file_name = file)
+
+        df = self._transform_file(df = df,
+                                  batch = batch)
+
+        self._datahandler.write(file_name = file,
+                                data = df)
+
+        print(f"saved file {file}")
+
+        return
+
+    def transform_data(self,
+                       n_jobs: int = 8) -> None:
         """\
         Applies the normalization procedure to the files and writes
         the data to disk or to the anndata file.
+
+        Parameters
+        ----------
+        n_jobs
+            Number of processes used for data analysis.
         
         Returns
         -------
         None
 
         """
-        file_names = self._datahandler._all_file_names
+        file_names = self._datahandler.validation_file_names
 
-        for file in file_names:
-            df = self._datahandler.get_dataframe(file_name = file,
-                                                 raw = False)
-            batch = self._datahandler.get_batch(file_name = file)
-
-            expr_data = self._transform_file(df = df,
-                                             batch = batch)
-
-            self._datahandler.write(file_name = file,
-                                    data = expr_data)
-
-            print(f"saved file {file}")
+        with cf.ThreadPoolExecutor(max_workers = n_jobs) as p:
+            p.map(self._run_transformation, [file for file in file_names])
 
     def _run_spline_funcs(self,
                           data: np.ndarray,
@@ -574,9 +594,11 @@ class CytoNorm:
 
         # Vectorized version would be something, but hard to implement...
         for ch_idx, channel in enumerate(channel_names):
-            spline_func = self.splinefuncs.get_spline(batch = batch,
-                                                      cluster = cluster,
-                                                      channel = channel)
+            spline_func = self.splinefuncs.get_spline(
+                batch = batch,
+                cluster = cluster,
+                channel = channel
+            )
             vals = spline_func.transform(data[:, ch_idx])
             data[:, ch_idx] = vals
 

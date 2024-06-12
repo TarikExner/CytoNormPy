@@ -27,27 +27,17 @@ class Plotter:
                       display_reference: bool) -> pd.DataFrame:
 
         original_df = self.cnp._datahandler \
-            .get_dataframe(file_name,
-                           raw = False,
-                           annot_file_name = False)
+            .get_dataframe(file_name)
 
-        normalized_values = self.cnp.\
+        normalized_df = self.cnp.\
             _transform_file(
                 df = original_df.copy(),
                 batch = self.cnp._datahandler.get_batch(file_name)
             )
 
-        normalized_df = pd.DataFrame(
-            data = normalized_values,
-            index = original_df.index,
-            columns = original_df.columns
-        )
-
         if display_reference is True:
             ref_df = self.cnp._datahandler \
-                .get_corresponding_ref_dataframe(file_name,
-                                                 raw = False,
-                                                 annot_file_name = False)
+                .get_corresponding_ref_dataframe(file_name)
             ref_df["origin"] = "reference"
         else:
             ref_df = None

@@ -122,7 +122,7 @@ class MeanShift(ClusterBase):
         super().__init__()
         if "random_state" not in kwargs:
             kwargs["random_state"] = 187
-        self.est = knnclassifier(**kwargs)
+        self.est = meanshiftclassifier(**kwargs)
 
     def train(self,
               X: np.ndarray,

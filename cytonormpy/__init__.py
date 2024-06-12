@@ -29,5 +29,6 @@ __all__ = [
     "LogTransformer",
     "LogicleTransformer",
 
-    "Plotter"
+    "Plotter",
+    "FCSFile"
 ]

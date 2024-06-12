@@ -67,8 +67,10 @@ def example_cytonorm():
     t = AsinhTransformer(cofactors = 5)
     cn.add_clusterer(fs)
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory = os.path.join(data_dir, "_resources"),
-                          metadata = metadata)
+    cn.run_fcs_data_setup(
+        input_directory = os.path.join(data_dir, "_resources"),
+        metadata = metadata
+    )
     cn.run_clustering(cluster_cv_threshold = 2)
     cn.calculate_quantiles()
     cn.calculate_splines(goal = "batch_mean")

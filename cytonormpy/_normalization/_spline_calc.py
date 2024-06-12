@@ -3,6 +3,52 @@ from typing import Union, Callable, Literal, Optional
 
 from scipy.interpolate import CubicHermiteSpline, PPoly
 
+from numba import njit, float64
+
+@njit(float64[:](float64[:]))
+def numba_diff(arr):
+    result = np.empty(arr.size - 1, dtype=arr.dtype)
+    for i in range(arr.size - 1):
+        result[i] = arr[i + 1] - arr[i]
+    return result
+
+
+@njit(float64[:](float64[:], float64[:]))
+def _select_interpolants(x: np.ndarray,
+                         y: np.ndarray):
+    """\
+    Modifies the tangents mi to ensure the monotonicity of the
+    resulting Hermite Spline.
+
+    This implementation follows
+    https://en.wikipedia.org/wiki/Monotone_cubic_interpolation and
+    https://github.com/SurajGupta/r-source/blob/master/src/library/stats/src/monoSpl.c
+    """
+    dy = numba_diff(y)
+    dx = numba_diff(x)
+    Sx = dy / dx
+    m = np.array([Sx[0]] + list((Sx[1:] + Sx[:-1]) / 2) + [Sx[-1]])
+    n = m.shape[0]
+    # Fritsch Carlson algorithm
+    for k in range(n - 1):
+        Sk = Sx[k]
+        k1 = k + 1
+        if Sk == 0:
+            m[k] = m[k1] = 0
+        else:
+            alpha = m[k] / Sk
+            beta = m[k1] / Sk
+            a2b3 = 2 * alpha + beta - 3
+            ab23 = alpha + 2 * beta - 3
+
+            if (a2b3 > 0) & \
+               (ab23 > 0) & \
+               (alpha * (a2b3 + ab23) < a2b3 * a2b3):
+                tauS = 3 * Sk / np.sqrt(alpha**2 + beta**2)
+                m[k] = tauS * alpha
+                m[k1] = tauS * beta
+    return m
+
 
 class IdentitySpline:
     """\
@@ -65,38 +111,7 @@ class Spline:
     def _select_interpolants(self,
                              x: np.ndarray,
                              y: np.ndarray) -> np.ndarray:
-        """\
-        Modifies the tangents mi to ensure the monotonicity of the
-        resulting Hermite Spline.
-
-        This implementation follows
-        https://en.wikipedia.org/wiki/Monotone_cubic_interpolation and
-        https://github.com/SurajGupta/r-source/blob/master/src/library/stats/src/monoSpl.c
-        """
-        dy = np.diff(y)
-        dx = np.diff(x)
-        Sx = dy / dx
-        m = np.array([Sx[0]] + list((Sx[1:] + Sx[:-1]) / 2) + [Sx[-1]])
-        n = m.shape[0]
-        # Fritsch Carlson algorithm
-        for k in range(n - 1):
-            Sk = Sx[k]
-            k1 = k + 1
-            if Sk == 0:
-                m[k] = m[k1] = 0
-            else:
-                alpha = m[k] / Sk
-                beta = m[k1] / Sk
-                a2b3 = 2 * alpha + beta - 3
-                ab23 = alpha + 2 * beta - 3
-
-                if (a2b3 > 0) & \
-                   (ab23 > 0) & \
-                   (alpha * (a2b3 + ab23) < a2b3 * a2b3):
-                    tauS = 3 * Sk / np.sqrt(alpha**2 + beta**2)
-                    m[k] = tauS * alpha
-                    m[k1] = tauS * beta
-        return m
+        return _select_interpolants(x, y)
 
     def fit(self,
             current_distribution: Optional[np.ndarray],
@@ -127,8 +142,10 @@ class Spline:
             assert not self.is_fit()
             assert current_distribution is not None
             assert goal_distribution is not None
-            m = self._select_interpolants(current_distribution,
-                                          goal_distribution)
+            m = self._select_interpolants(
+                current_distribution,
+                goal_distribution
+            )
             self.fit_func: PPoly = self.spline_calc_function(
                 current_distribution,
                 goal_distribution,
