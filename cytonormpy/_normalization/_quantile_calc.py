@@ -52,7 +52,8 @@ class ExpressionQuantiles(BaseQuantileHandler):
                  n_batches: int,
                  n_channels: int,
                  n_quantiles: int,
-                 n_clusters: int):
+                 n_clusters: int,
+                 quantile_array: Optional[Union[list[int], np.ndarray]] = None):
 
         super().__init__(
             quantile_axis = 0,
@@ -62,12 +63,18 @@ class ExpressionQuantiles(BaseQuantileHandler):
             ndim = 4
         )
 
+        if quantile_array is not None:
+            if not isinstance(quantile_array, np.ndarray):
+                quantile_array = np.array(quantile_array)
+            self._n_quantiles = quantile_array.shape[0]
+            self.quantiles = quantile_array
+        else:
+            self._n_quantiles = n_quantiles
+            self.quantiles = self._create_quantile_array()
+
         self._n_batches = n_batches
         self._n_channels = n_channels
-        self._n_quantiles = n_quantiles
         self._n_clusters = n_clusters
-
-        self.quantiles = self._create_quantile_array()
 
         self._init_array()
 

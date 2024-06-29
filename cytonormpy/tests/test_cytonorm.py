@@ -345,28 +345,9 @@ class CytoNormPandasLookupQuantileCalc(CytoNorm):
         super().__init__()
 
     def calculate_quantiles(self,
-                            n_quantiles: int = 101,
+                            n_quantiles: int = 99,
                             min_cells: int = 50,
                             ) -> None:
-        """\
-        Calculates quantiles per batch, metacluster and sample.
-
-        Parameters
-        ----------
-        n_quantiles
-            Number of quantiles to be calculated. Defaults to 101,
-            which gives every percentile from 0 to 100.
-        min_cells
-            Minimum cells per cluster in order to calculate quantiles.
-            If the cluster falls short, no quantiles and therefore
-            no spline function is calculated. In that case, the spline
-            function will return the input values. Defaults to 101.
-
-        Returns
-        -------
-        None. Quantiles will be saved and used for later analysis.
-
-        """
 
         ref_data_df: pd.DataFrame = self._datahandler.get_ref_data_df()
 
@@ -517,6 +498,31 @@ def test_fancy_numpy_indexing_expr_quantiles(metadata: pd.DataFrame,
         cn2._expr_quantiles._expr_quantiles,
         equal_nan = True
     )
+
+def test_quantile_calc_custom_array_errors(metadata: pd.DataFrame,
+                                           INPUT_DIR: Path):
+    t = cnp.AsinhTransformer()
+
+    cn = CytoNorm()
+    cn.add_transformer(t)
+    cn.run_fcs_data_setup(input_directory = INPUT_DIR,
+                          metadata = metadata,
+                          channels = "markers",
+                          output_directory = INPUT_DIR)
+    with pytest.raises(TypeError):
+        cn.calculate_quantiles(quantile_array = pd.DataFrame())
+    with pytest.raises(ValueError):
+        cn.calculate_quantiles(quantile_array = [10,20,50,100])
+    custom_quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    custom_quantile_array = np.array(custom_quantiles)
+
+    cn.calculate_quantiles(quantile_array = custom_quantiles)
+    assert np.array_equal(cn._expr_quantiles.quantiles, custom_quantile_array)
+    assert cn._expr_quantiles._n_quantiles == custom_quantile_array.shape[0]
+
+    cn.calculate_quantiles(quantile_array = custom_quantile_array)
+    assert np.array_equal(cn._expr_quantiles.quantiles, custom_quantile_array)
+    assert cn._expr_quantiles._n_quantiles == custom_quantile_array.shape[0]
 
 
 

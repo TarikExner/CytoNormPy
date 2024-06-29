@@ -334,6 +334,7 @@ class CytoNorm:
     def calculate_quantiles(self,
                             n_quantiles: int = 99,
                             min_cells: int = 50,
+                            quantile_array: Optional[Union[list[float], np.ndarray]] = None
                             ) -> None:
         """\
         Calculates quantiles per batch, cluster and sample.
@@ -348,12 +349,21 @@ class CytoNorm:
             If the cluster falls short, no quantiles and therefore
             no spline function is calculated. In that case, the spline
             function will return the input values. Defaults to 50.
+        quantile_array
+            Contains user-defined quantiles passed by the user. `n_quantiles`
+            will be ignored. Has to contain numbers between 0 and 1.
 
         Returns
         -------
         None. Quantiles will be saved and used for later analysis.
 
         """
+
+        if quantile_array is not None:
+            if not isinstance(quantile_array, np.ndarray) and not isinstance(quantile_array, list):
+                raise TypeError("quantile_array has to be passed as a list or an array")
+            if np.max(quantile_array) > 1 or np.min(quantile_array) < 0:
+                raise ValueError("Quantiles have to be between 0 and 1")
 
         ref_data_df: pd.DataFrame = self._datahandler.get_ref_data_df()
 
@@ -388,7 +398,8 @@ class CytoNorm:
             n_channels = n_channels,
             n_quantiles = n_quantiles,
             n_batches = n_batches,
-            n_clusters = n_clusters
+            n_clusters = n_clusters,
+            quantile_array = quantile_array
         )
 
         # we store the clusters that could not be calculated for later.
