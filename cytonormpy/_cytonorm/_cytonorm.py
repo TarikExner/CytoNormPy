@@ -332,22 +332,22 @@ class CytoNorm:
                 )
 
     def calculate_quantiles(self,
-                            n_quantiles: int = 101,
+                            n_quantiles: int = 99,
                             min_cells: int = 50,
                             ) -> None:
         """\
-        Calculates quantiles per batch, metacluster and sample.
+        Calculates quantiles per batch, cluster and sample.
 
         Parameters
         ----------
         n_quantiles
-            Number of quantiles to be calculated. Defaults to 101,
-            which gives every percentile from 0 to 100.
+            Number of quantiles to be calculated. Defaults to 99,
+            which gives every percentile from 0.01 to 0.99.
         min_cells
             Minimum cells per cluster in order to calculate quantiles.
             If the cluster falls short, no quantiles and therefore
             no spline function is calculated. In that case, the spline
-            function will return the input values. Defaults to 101.
+            function will return the input values. Defaults to 50.
 
         Returns
         -------

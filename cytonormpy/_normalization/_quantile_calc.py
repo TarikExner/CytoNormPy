@@ -72,10 +72,15 @@ class ExpressionQuantiles(BaseQuantileHandler):
         self._init_array()
 
     def _create_quantile_array(self) -> np.ndarray:
-        # return (np.arange(1, self._n_quantiles + 1) / (self._n_quantiles + 1))
-        # above is the R-implementation, which however gives different results due
-        # to R-intricacies. 
-        return np.linspace(0, 100, self._n_quantiles) / 100
+        """
+        Creates an array with the different quantiles.
+        Skips 0 and 1 on purpose. Follows the R implementation
+        closely, giving the exact same values.
+
+        Alternative, including 0 and 1:
+            return np.linspace(0, 100, self._n_quantiles) / 100
+        """
+        return (np.arange(1, self._n_quantiles + 1) / (self._n_quantiles + 1))
 
     def _init_array(self):
         """
