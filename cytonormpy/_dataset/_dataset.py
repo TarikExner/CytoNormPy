@@ -233,18 +233,13 @@ class DataHandler:
             ]
         )
 
-    def _find_channel_indices_of_fcs(self,
-                                     pnn_labels: list[str],
-                                     channel_numbers: list[int],
-                                     data_columns: pd.Index):
-        sorted_idxs = np.argsort(channel_numbers)
-        pnn_labels = list(np.array(pnn_labels)[sorted_idxs])
-        return np.array(
-            [
-                pnn_labels.index(col)
-                for col in data_columns.tolist()
-            ]
-        )
+    def _find_channel_indices_in_fcs(self,
+                                     pnn_labels: dict[str, int],
+                                     cytonorm_channels: pd.Index):
+        return [
+            pnn_labels[channel] - 1
+            for channel in cytonorm_channels
+        ]
 
     def _get_reference_file_names(self) -> list[str]:
         return self._metadata.loc[
@@ -444,14 +439,15 @@ class DataHandlerFCS(DataHandler):
                 file_path,
                 ignore_offset_error = True
             )
+
         channels: dict = fcs.channels
-        pnn_labels = [
-            channels[channel_number]["PnN"]
+
+        pnn_labels = {
+            channels[channel_number]["PnN"]: int(channel_number)
             for channel_number in channels
-        ]
-        channel_numbers = [int(k) for k in channels]
-        channel_indices = self._find_channel_indices_of_fcs(pnn_labels,
-                                                            channel_numbers,
+        }
+
+        channel_indices = self._find_channel_indices_in_fcs(pnn_labels,
                                                             data.columns)
         orig_events = np.reshape(
             np.array(fcs.events),
@@ -462,6 +458,7 @@ class DataHandlerFCS(DataHandler):
         fcs.events = orig_events.flatten()  # type: ignore
         fcs.write_fcs(new_file_path, metadata = fcs.text)
 
+        
 
 class DataHandlerAnnData(DataHandler):
     """\

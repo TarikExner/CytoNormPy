@@ -4,6 +4,8 @@ from typing import Optional
 from os import PathLike
 from anndata import AnnData
 
+from typing import Union
+
 from ._datareader import DataReaderFCS
 
 class DataProvider:
@@ -100,7 +102,7 @@ class DataProvider:
 class DataProviderFCS(DataProvider):
 
     def __init__(self,
-                 input_directory: PathLike,
+                 input_directory: Union[PathLike, str],
                  truncate_max_range: bool,
                  sample_identifier_column: str,
                  reference_column: str,

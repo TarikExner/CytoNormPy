@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Union, Optional, Callable
 
-from numba import njit, int64, float64
 from ._utils import numba_quantiles
 
 class BaseQuantileHandler:
@@ -119,6 +118,7 @@ class ExpressionQuantiles(BaseQuantileHandler):
                              data: np.ndarray) -> np.ndarray:
         """Calculates the quantiles from the data"""
         q = numba_quantiles(data, self.quantiles)
+        # q = np.quantile(data, self.quantiles, axis = 0)
         # alternative: q[(...,) + (np.newaxis,) * self._expr_quantiles.ndim]
         # alternative needs testing... not sure if more readable
         # but surely more generic

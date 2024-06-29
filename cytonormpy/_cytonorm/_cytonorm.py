@@ -360,7 +360,7 @@ class CytoNorm:
         if "clusters" not in ref_data_df.index.names:
             warnings.warn("No Clusters have been found.", UserWarning)
             ref_data_df["clusters"] = -1
-            ref_data_df = ref_data_df.set_index("clusters", append = True)
+            ref_data_df.set_index("clusters", append = True, inplace = True)
 
         batches = sorted(
             ref_data_df.index \
@@ -391,47 +391,89 @@ class CytoNorm:
             n_clusters = n_clusters
         )
 
-        # potentially this needs optimizing in the future.
-        # compare slice indexing of fp.tl.gate_frequencies_mem.
-        # For now, we sort the index and hope for the best.
-
         # we store the clusters that could not be calculated for later.
         self._not_calculated = {
             batch: [] for batch in self.batches
         }
-        ref_data_df = ref_data_df.sort_index()
-        for b, batch in enumerate(batches):
-            for c, cluster in enumerate(clusters):
-                data = ref_data_df.loc[
-                    (ref_data_df.index.get_level_values("batch") == batch) &
-                    (ref_data_df.index.get_level_values("clusters") == cluster),
-                    channels
-                ].to_numpy()
 
-                if data.shape[0] < min_cells:
-                    warning_msg = f"{data.shape[0]} cells detected in batch "
-                    warning_msg += f"{batch} for cluster {cluster}. "
-                    warning_msg += "Skipping quantile calculation. "
+        ref_data_df = ref_data_df.sort_index(
+            level = ["batch", "clusters"]
+        )
 
-                    warnings.warn(
-                        warning_msg,
-                        UserWarning
-                    )
-                    self._not_calculated[batch].append(cluster)
+        # we extract the values for batch and cluster...
+        batch_idxs = ref_data_df.index.get_level_values("batch").to_numpy()
+        cluster_idxs = ref_data_df.index.get_level_values("clusters").to_numpy()
 
-                    self._expr_quantiles.add_nan_slice(
-                        batch_idx = b,
-                        cluster_idx = c
-                    )
+        # ... and get the idxs of their unique combinations
+        batch_cluster_idxs = np.vstack([batch_idxs, cluster_idxs]).T
+        unique_combinations, batch_cluster_unique_idxs = np.unique(
+            batch_cluster_idxs,
+            axis = 0,
+            return_index = True
+        )
+        # we append the shape as last idx
+        batch_cluster_unique_idxs = np.hstack(
+            [
+                batch_cluster_unique_idxs,
+                np.array(
+                    batch_cluster_idxs.shape[0]
+                )
+            ]
+        )
 
-                    continue
+        # we create a lookup table to get the batch and cluster back
+        batch_cluster_lookup = {
+            idx: unique_combinations[i]
+            for i, idx in enumerate(batch_cluster_unique_idxs[:-1])
+        }
+        # we also create a lookup table for the batch indexing...
+        batch_idx_lookup = {
+            batch: i
+            for i, batch in enumerate(batches)
+        }
+        # ... and the cluster indexing
+        cluster_idx_lookup = {
+            cluster: i
+            for i, cluster in enumerate(clusters)
+        }
+        
+        # finally, we convert to numpy
+        # As the array is sorted, we can index en bloc
+        # with a massive speed improvement compared to
+        # the pd.loc[] functionality.
+        ref_data = ref_data_df.to_numpy()
 
-                self._expr_quantiles.calculate_and_add_quantiles(
-                    data = data,
+        for i in range(batch_cluster_unique_idxs.shape[0]-1):
+            batch, cluster = batch_cluster_lookup[batch_cluster_unique_idxs[i]]
+            b = batch_idx_lookup[batch]
+            c = cluster_idx_lookup[cluster]
+            data = ref_data[
+                batch_cluster_unique_idxs[i] : batch_cluster_unique_idxs[i+1],
+                :
+            ]
+            if data.shape[0] < min_cells:
+                warning_msg = f"{data.shape[0]} cells detected in batch "
+                warning_msg += f"{batch} for cluster {cluster}. "
+                warning_msg += "Skipping quantile calculation. "
+
+                warnings.warn(
+                    warning_msg,
+                    UserWarning
+                )
+                self._not_calculated[batch].append(cluster)
+
+                self._expr_quantiles.add_nan_slice(
                     batch_idx = b,
                     cluster_idx = c
                 )
 
+                continue
+
+            self._expr_quantiles.calculate_and_add_quantiles(
+                data = data,
+                batch_idx = b,
+                cluster_idx = c
+            )
         return
 
     def calculate_splines(self,
@@ -512,6 +554,8 @@ class CytoNorm:
         else:
             df["clusters"] = -1
         df = df.set_index("clusters", append = True)
+        df["original_idx"] = list(range(df.shape[0]))
+        df = df.set_index("original_idx", append = True)
         df = df.sort_index(level = "clusters")
 
         expr_data = df.to_numpy(copy = True)
@@ -538,11 +582,13 @@ class CytoNorm:
                     batch = batch,
                     cluster = cluster,
             )
-        return pd.DataFrame(
+        res = pd.DataFrame(
             data = expr_data,
             columns = df.columns,
             index = df.index
         )
+
+        return res.sort_index(level = "original_idx", ascending = True)
 
     def _run_transformation(self,
                             file: str) -> None:
