@@ -361,7 +361,7 @@ class DataHandlerFCS(DataHandler):
             _metadata = self._read_metadata(metadata)
 
 
-        _provider = DataProviderFCS(
+        _provider = self._create_data_provider(
             input_directory = self._input_dir,
             truncate_max_range = truncate_max_range,
             sample_identifier_column = sample_identifier_column,
@@ -386,6 +386,25 @@ class DataHandlerFCS(DataHandler):
         self._provider.channels = self.channels
         self.ref_data_df = self._provider.select_channels(self.ref_data_df)
 
+    def _create_data_provider(self,
+                              input_directory,
+                              metadata: pd.DataFrame,
+                              channels: Optional[list[str]],
+                              reference_column: str = "reference",
+                              batch_column: str = "batch",
+                              sample_identifier_column: str = "file_name",
+                              truncate_max_range: bool = True,
+                              transformer: Optional[Transformer] = None) -> DataProviderFCS:
+        return DataProviderFCS(
+            input_directory = input_directory,
+            truncate_max_range = truncate_max_range,
+            sample_identifier_column = sample_identifier_column,
+            reference_column = reference_column,
+            batch_column = batch_column,
+            metadata = metadata,
+            channels = channels,
+            transformer = transformer
+        )
 
     def _read_metadata(self,
                        path: PathLike) -> pd.DataFrame:
@@ -524,7 +543,7 @@ class DataHandlerAnnData(DataHandler):
             sample_identifier_column
         )
 
-        _provider = DataProviderAnnData(
+        _provider = self._create_data_provider(
             adata = adata,
             layer = layer,
             sample_identifier_column = sample_identifier_column,
@@ -562,6 +581,26 @@ class DataHandlerAnnData(DataHandler):
         assert isinstance(df, pd.DataFrame)
         return df
 
+    def _create_data_provider(self,
+                              adata: AnnData,
+                              layer: str,
+                              reference_column: str,
+                              batch_column: str,
+                              sample_identifier_column: str,
+                              channels: Optional[list[str]],
+                              metadata: pd.DataFrame,
+                              transformer: Optional[Transformer] = None) -> DataProviderAnnData:
+        return DataProviderAnnData(
+            adata = adata,
+            layer = layer,
+            sample_identifier_column = sample_identifier_column,
+            reference_column = reference_column,
+            batch_column = batch_column,
+            metadata = metadata,
+            channels = channels, # instantiate with None as we dont know the channels yet
+            transformer = transformer
+        )
+
     def write(self,
               file_name: str,
               data: pd.DataFrame) -> None:
@@ -590,9 +629,21 @@ class DataHandlerAnnData(DataHandler):
         # leaving at pd.Index type is 2x faster
         arr_idxs = self.adata.obs.index.get_indexer(obs_idxs)
 
+        channel_indices = self._find_channel_indices_in_adata(data.columns)
+
+        inv_transformed: pd.DataFrame = self._provider.inverse_transform_data(data)
+
         self.adata.layers[self._key_added][
-            arr_idxs[:, np.newaxis],
-            self._channel_indices[np.newaxis, :]
-        ] = data
+            np.ix_(arr_idxs, np.array(channel_indices))
+        ] = inv_transformed.values
 
         return
+
+    def _find_channel_indices_in_adata(self,
+                                       channels: pd.Index) -> list[int]:
+        adata_channels = self.adata.var.index.tolist()
+        return [
+            adata_channels.index(channel)
+            for channel in channels
+        ]
+

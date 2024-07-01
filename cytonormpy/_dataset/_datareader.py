@@ -1,6 +1,10 @@
-from ._fcs_file import FCSFile
 from os import PathLike
 import pandas as pd
+
+from typing import Union
+
+from ._fcs_file import FCSFile
+
 
 class DataReader:
 
@@ -28,7 +32,7 @@ class DataReaderFCS(DataReader):
 
     """
     def __init__(self,
-                 input_directory: PathLike,
+                 input_directory: Union[PathLike, str],
                  truncate_max_range: bool = True):
         self._input_dir = input_directory
         self._truncate_max_range = truncate_max_range

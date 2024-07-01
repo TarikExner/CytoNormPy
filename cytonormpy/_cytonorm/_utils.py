@@ -1,5 +1,13 @@
 import pandas as pd
 
+class ClusterCVWarning(Warning):
+
+    def __init__(self,
+                 message):
+        self.message = message
+
+    def __str__(self):
+        return repr(self.message)
 
 def _all_cvs_below_cutoff(df: pd.DataFrame,
                           cluster_key: str,
@@ -44,4 +52,3 @@ def _calculate_cluster_cv(df: pd.DataFrame,
                                                 index = sample_key,
                                                 columns = cluster_key)
     return list(cluster_by_sample.std() / cluster_by_sample.mean())
-
