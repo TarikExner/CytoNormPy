@@ -30,7 +30,7 @@ class Plotter:
             .get_dataframe(file_name)
 
         normalized_df = self.cnp.\
-            _transform_file(
+            _normalize_file(
                 df = original_df.copy(),
                 batch = self.cnp._datahandler.get_batch(file_name)
             )
@@ -497,6 +497,7 @@ class Plotter:
 
         ylims = ax.get_ylim()
         xlims = ax.get_xlim()
+        xmin, xmax = ax.get_xlim()
         for q in label_quantiles:
             plt.vlines(x = df.loc[df.index == q, "original"].iloc[0],
                        ymin = ylims[0],
@@ -508,7 +509,7 @@ class Plotter:
                        xmax = df.loc[df.index == q, "original"].iloc[0],
                        color = "black",
                        linewidth = 0.4)
-            plt.text(x = -0.7,
+            plt.text(x = xmin + 0.05*(xmax-xmin),
                      y = df.loc[df.index == q, "goal"].iloc[0] + ((ylims[1] - ylims[0]) / 200),
                      s = f"Q{int(q*100)}")
 

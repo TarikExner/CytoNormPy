@@ -16,8 +16,8 @@ def numba_diff(arr):
 
 
 @njit(float64[:](float64[:], float64[:]))
-def _select_interpolants(x: np.ndarray,
-                         y: np.ndarray):
+def _select_interpolants_numba(x: np.ndarray,
+                               y: np.ndarray):
     """\
     Modifies the tangents mi to ensure the monotonicity of the
     resulting Hermite Spline.

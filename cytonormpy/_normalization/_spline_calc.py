@@ -3,7 +3,7 @@ from typing import Union, Callable, Literal, Optional
 
 from scipy.interpolate import CubicHermiteSpline, PPoly
 
-from .._utils._utils import regularize_values, _select_interpolants
+from .._utils._utils import regularize_values, _select_interpolants_numba
 
 
 class IdentitySpline:
@@ -71,7 +71,7 @@ class Spline:
         self.cluster = cluster
         self.spline_calc_function = spline_calc_function
         self._extrapolate = extrapolate
-        self._limits = None
+        self._limits = limits
 
         if self._limits is not None:
             self._limits = np.array(self._limits)
@@ -79,7 +79,7 @@ class Spline:
     def _select_interpolants(self,
                              x: np.ndarray,
                              y: np.ndarray) -> np.ndarray:
-        return _select_interpolants(x, y)
+        return _select_interpolants_numba(x, y)
 
     def _append_limits(self,
                        arr: np.ndarray) -> np.ndarray:

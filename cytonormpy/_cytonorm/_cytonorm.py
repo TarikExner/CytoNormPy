@@ -73,7 +73,7 @@ class CytoNorm:
     >>> cn.calculate_quantiles()
     >>> cn.calculate_splines()
     >>>
-    >>> cn.transform_data()
+    >>> cn.normalize_data()
 
 
     """
@@ -164,7 +164,8 @@ class CytoNorm:
                           batch_column: str = "batch",
                           sample_identifier_column: str = "file_name",
                           channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
-                          key_added: str = "cyto_normalized"
+                          key_added: str = "cyto_normalized",
+                          copy: bool = False
                           ) -> None:
         """\
         Method to setup the data handling for anndata objects. Will
@@ -201,6 +202,7 @@ class CytoNorm:
         None, appends `._datahandler` attribute.
 
         """
+        adata = adata.copy() if copy else adata
         self._datahandler: DataHandler = DataHandlerAnnData(
             adata = adata,
             layer = layer,

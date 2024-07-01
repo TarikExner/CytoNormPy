@@ -74,7 +74,7 @@ def example_cytonorm():
     cn.run_clustering(cluster_cv_threshold = 2)
     cn.calculate_quantiles()
     cn.calculate_splines(goal = "batch_mean")
-    cn.transform_data()
+    cn.normalize_data()
 
     return cn
     
