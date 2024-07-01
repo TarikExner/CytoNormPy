@@ -401,7 +401,6 @@ class CytoNormPandasLookupQuantileCalc(CytoNorm):
                     (ref_data_df.index.get_level_values("clusters") == cluster),
                     channels
                 ].to_numpy()
-                print("Pandas: ", batch, cluster, b, c)
 
                 if data.shape[0] < min_cells:
                     warning_msg = f"{data.shape[0]} cells detected in batch "
@@ -490,9 +489,6 @@ def test_fancy_numpy_indexing_expr_quantiles(metadata: pd.DataFrame,
     assert cn1.clusters == cn2.clusters
     assert cn1._not_calculated == cn2._not_calculated
 
-    print(cn1._not_calculated)
-    print(cn2._not_calculated)
-
     assert np.array_equal(
         cn1._expr_quantiles._expr_quantiles,
         cn2._expr_quantiles._expr_quantiles,
@@ -525,5 +521,19 @@ def test_quantile_calc_custom_array_errors(metadata: pd.DataFrame,
     assert cn._expr_quantiles._n_quantiles == custom_quantile_array.shape[0]
 
 
+def test_spline_calc_limits_errors(metadata: pd.DataFrame,
+                                   INPUT_DIR: Path):
+    t = cnp.AsinhTransformer()
+
+    cn = CytoNorm()
+    cn.add_transformer(t)
+    cn.run_fcs_data_setup(input_directory = INPUT_DIR,
+                          metadata = metadata,
+                          channels = "markers",
+                          output_directory = INPUT_DIR)
+    cn.calculate_quantiles()
+    with pytest.raises(TypeError):
+        cn.calculate_splines(limits = "limitless computation!")
+    cn.calculate_splines(limits = [0,8])
 
 

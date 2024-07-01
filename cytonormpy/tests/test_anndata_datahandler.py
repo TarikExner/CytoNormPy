@@ -68,8 +68,12 @@ def test_write_anndata(datahandleranndata: DataHandlerAnnData,
                        metadata: pd.DataFrame):
     dh = datahandleranndata
     insertion_data = np.zeros(shape = (1000, dh._channel_indices.shape[0]))
-    print(insertion_data.shape)
     req_file = metadata["file_name"].tolist()[0]
+    insertion_data = pd.DataFrame(
+        data = insertion_data,
+        columns = dh.channels,
+        index = list(range(insertion_data.shape[0]))
+    )
     dh.write(file_name = req_file,
              data = insertion_data)
     subset_adata = dh.adata[

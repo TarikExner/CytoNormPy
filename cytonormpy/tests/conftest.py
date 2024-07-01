@@ -93,8 +93,6 @@ def data_anndata() -> AnnData:
         adatas.append(adata)
 
     dataset = ad.concat(adatas, axis = 0, join = "outer", merge = "same")
-    dataset.obs = dataset.obs.astype(str)
-    dataset.var = dataset.var.astype(str)
     dataset.var_names_make_unique()
     dataset.obs_names_make_unique()
 
