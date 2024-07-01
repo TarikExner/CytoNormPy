@@ -314,7 +314,6 @@ class GoalDistribution(BaseQuantileHandler):
             )
             self.distrib = self.distrib[:, :, :, np.newaxis]
         else:
-            # faulty...
             assert isinstance(goal, int)
             self.distrib = expr_quantiles.get_quantiles(batch_idx = goal)
 

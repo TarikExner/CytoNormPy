@@ -429,7 +429,7 @@ class CytoNorm:
             for i, idx in enumerate(batch_cluster_unique_idxs[:-1])
         }
         # we also create a lookup table for the batch indexing...
-        batch_idx_lookup = {
+        self.batch_idx_lookup = {
             batch: i
             for i, batch in enumerate(batches)
         }
@@ -447,7 +447,7 @@ class CytoNorm:
 
         for i in range(batch_cluster_unique_idxs.shape[0]-1):
             batch, cluster = batch_cluster_lookup[batch_cluster_unique_idxs[i]]
-            b = batch_idx_lookup[batch]
+            b = self.batch_idx_lookup[batch]
             c = cluster_idx_lookup[cluster]
             data = ref_data[
                 batch_cluster_unique_idxs[i] : batch_cluster_unique_idxs[i+1],
@@ -513,6 +513,9 @@ class CytoNorm:
                 raise TypeError("Limits have to be passed as a list or array")
 
         expr_quantiles = self._expr_quantiles
+
+        if isinstance(goal, int):
+            goal = self.batch_idx_lookup[goal]
 
         # we now create the goal distributions with shape
         # n_channels x n_quantles x n_metaclusters x 1
