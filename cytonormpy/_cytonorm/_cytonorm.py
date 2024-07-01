@@ -5,35 +5,24 @@ import numpy as np
 from anndata import AnnData
 import warnings
 
-from multiprocessing import Pool
 import concurrent.futures as cf
 
-from ._utils import _all_cvs_below_cutoff
+from ._utils import _all_cvs_below_cutoff, ClusterCVWarning
 
 from .._dataset._dataset import (DataHandlerFCS,
                                  DataHandler,
                                  DataHandlerAnnData)
+
 from .._transformation._transformations import Transformer
 
 from .._normalization._spline_calc import (Spline,
                                            Splines,
                                            IdentitySpline)
+
 from .._normalization._quantile_calc import (ExpressionQuantiles,
                                              GoalDistribution)
 
 from .._clustering._cluster_algorithms import ClusterBase
-
-from .._utils._utils import regularize_values
-
-
-class ClusterCVWarning(Warning):
-
-    def __init__(self,
-                 message):
-        self.message = message
-
-    def __str__(self):
-        return repr(self.message)
 
 
 class CytoNorm:
@@ -220,7 +209,8 @@ class CytoNorm:
             batch_column = batch_column,
             sample_identifier_column = sample_identifier_column,
             channels = channels,
-            key_added = key_added
+            key_added = key_added,
+            transformer = self._transformer
         )
 
     def add_transformer(self,
@@ -263,7 +253,8 @@ class CytoNorm:
                        n_cells: Optional[int] = None,
                        test_cluster_cv: bool = True,
                        cluster_cv_threshold = 2,
-                       **kwargs) -> None:
+                       **kwargs
+                       ) -> None:
         """\
         Runs the clustering step. The clustering will be performed
         on as many cells as n_cells specifies. The remaining cells
@@ -488,7 +479,9 @@ class CytoNorm:
         return
 
     def calculate_splines(self,
-                          goal: Union[str, int] = "batch_mean") -> None:
+                          limits: Optional[Union[list[float], np.ndarray]] = None,
+                          goal: Union[str, int] = "batch_mean"
+                          ) -> None:
         """\
         Calculates the spline functions of the expression values
         and the goal expression. The goal expression is calculated
@@ -496,6 +489,13 @@ class CytoNorm:
 
         Parameters
         ----------
+        limits
+            A list or array of fixed intensity values. These values will be
+            appended to the calculated quantiles and included to calculate
+            the spline functions. By default, the spline functions are extrapolated
+            linearly outside the observed data range, using the slope at the last
+            data point as the slope for the extrapolation. Use `limits` to further
+            control the behaviour outside the data range.
         goal
             Function to calculate the goal expression per cluster and
             channel. Defaults to `batch_mean`, which calculates the mean
@@ -508,6 +508,9 @@ class CytoNorm:
 
 
         """
+        if limits is not None:
+            if not isinstance(limits, list) and not isinstance(limits, np.ndarray):
+                raise TypeError("Limits have to be passed as a list or array")
 
         expr_quantiles = self._expr_quantiles
 
@@ -530,7 +533,8 @@ class CytoNorm:
                         spl = Spline(batch,
                                      cluster,
                                      channel,
-                                     spline_calc_function = IdentitySpline)
+                                     spline_calc_function = IdentitySpline,
+                                     limits = limits)
                         spl.fit(current_distribution = None,
                                 goal_distribution = None)
                         splines.add_spline(spl)
@@ -544,17 +548,18 @@ class CytoNorm:
                                                        quantile_idx = None,
                                                        cluster_idx = c,
                                                        batch_idx = None)
-                        q, g = regularize_values(q, g)
-
                         spl = Spline(batch = batch,
                                      cluster = cluster,
-                                     channel = channel)
+                                     channel = channel,
+                                     limits = limits)
                         spl.fit(q, g)
                         splines.add_spline(spl)
 
         self.splinefuncs = splines
 
-    def _transform_file(self,
+        return
+
+    def _normalize_file(self,
                         df: pd.DataFrame,
                         batch: str) -> pd.DataFrame:
 
@@ -601,23 +606,23 @@ class CytoNorm:
 
         return res.sort_index(level = "original_idx", ascending = True)
 
-    def _run_transformation(self,
-                            file: str) -> None:
+    def _run_normalization(self,
+                           file: str) -> None:
         df = self._datahandler.get_dataframe(file_name = file)
 
         batch = self._datahandler.get_batch(file_name = file)
 
-        df = self._transform_file(df = df,
+        df = self._normalize_file(df = df,
                                   batch = batch)
 
         self._datahandler.write(file_name = file,
                                 data = df)
 
-        print(f"saved file {file}")
+        print(f"normalized file {file}")
 
         return
 
-    def transform_data(self,
+    def normalize_data(self,
                        n_jobs: int = 8) -> None:
         """\
         Applies the normalization procedure to the files and writes
@@ -626,7 +631,7 @@ class CytoNorm:
         Parameters
         ----------
         n_jobs
-            Number of processes used for data analysis.
+            Number of threads used for data analysis.
         
         Returns
         -------
@@ -636,7 +641,7 @@ class CytoNorm:
         file_names = self._datahandler.validation_file_names
 
         with cf.ThreadPoolExecutor(max_workers = n_jobs) as p:
-            p.map(self._run_transformation, [file for file in file_names])
+            p.map(self._run_normalization, [file for file in file_names])
 
     def _run_spline_funcs(self,
                           data: np.ndarray,
@@ -648,8 +653,6 @@ class CytoNorm:
         Runs the spline function for the corresponding batch and cluster.
         Loops through all channels and repopulates the dataframe.
         """
-
-        # Vectorized version would be something, but hard to implement...
         for ch_idx, channel in enumerate(channel_names):
             spline_func = self.splinefuncs.get_spline(
                 batch = batch,
@@ -660,3 +663,30 @@ class CytoNorm:
             data[:, ch_idx] = vals
 
         return data
+
+
+    def save_model(self,
+                   filename: Union[PathLike, str] = "model.cytonorm") -> None:
+        """\
+        Function to save the current CytoNorm instance to disk.
+
+        Parameters
+        ----------
+        filename:
+            PathLike input to save the file. Defaults to 'model.cytonorm'.
+
+        Returns
+        -------
+        None
+        """
+        import pickle
+        with open(filename, "wb") as file:
+            pickle.dump(self, file)
+
+
+
+def read_model(filename: Union[PathLike, str]) -> CytoNorm:
+    import pickle
+    with open(filename, "rb") as file:
+        cytonorm_obj = pickle.load(file)
+    return cytonorm_obj
