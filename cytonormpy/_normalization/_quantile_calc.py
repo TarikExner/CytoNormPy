@@ -87,6 +87,7 @@ class ExpressionQuantiles(BaseQuantileHandler):
         Alternative, including 0 and 1:
             return np.linspace(0, 100, self._n_quantiles) / 100
         """
+        # return np.linspace(0, 100, self._n_quantiles) / 100
         return (np.arange(1, self._n_quantiles + 1) / (self._n_quantiles + 1))
 
     def _init_array(self):
@@ -131,9 +132,9 @@ class ExpressionQuantiles(BaseQuantileHandler):
         """Calculates the quantiles from the data"""
         q = numba_quantiles(data, self.quantiles)
         # q = np.quantile(data, self.quantiles, axis = 0)
-        # alternative: q[(...,) + (np.newaxis,) * self._expr_quantiles.ndim]
-        # alternative needs testing... not sure if more readable
-        # but surely more generic
+
+        # alternative return syntax: q[(...,) + (np.newaxis,) * self._expr_quantiles.ndim]
+        # needs testing... not sure if more readable but surely more generic
         return q[:, :, np.newaxis, np.newaxis]
 
     def calculate_and_add_quantiles(self,

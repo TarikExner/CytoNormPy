@@ -3,51 +3,7 @@ from typing import Union, Callable, Literal, Optional
 
 from scipy.interpolate import CubicHermiteSpline, PPoly
 
-from numba import njit, float64
-
-@njit(float64[:](float64[:]))
-def numba_diff(arr):
-    result = np.empty(arr.size - 1, dtype=arr.dtype)
-    for i in range(arr.size - 1):
-        result[i] = arr[i + 1] - arr[i]
-    return result
-
-
-@njit(float64[:](float64[:], float64[:]))
-def _select_interpolants(x: np.ndarray,
-                         y: np.ndarray):
-    """\
-    Modifies the tangents mi to ensure the monotonicity of the
-    resulting Hermite Spline.
-
-    This implementation follows
-    https://en.wikipedia.org/wiki/Monotone_cubic_interpolation and
-    https://github.com/SurajGupta/r-source/blob/master/src/library/stats/src/monoSpl.c
-    """
-    dy = numba_diff(y)
-    dx = numba_diff(x)
-    Sx = dy / dx
-    m = np.array([Sx[0]] + list((Sx[1:] + Sx[:-1]) / 2) + [Sx[-1]])
-    n = m.shape[0]
-    # Fritsch Carlson algorithm
-    for k in range(n - 1):
-        Sk = Sx[k]
-        k1 = k + 1
-        if Sk == 0:
-            m[k] = m[k1] = 0
-        else:
-            alpha = m[k] / Sk
-            beta = m[k1] / Sk
-            a2b3 = 2 * alpha + beta - 3
-            ab23 = alpha + 2 * beta - 3
-
-            if (a2b3 > 0) & \
-               (ab23 > 0) & \
-               (alpha * (a2b3 + ab23) < a2b3 * a2b3):
-                tauS = 3 * Sk / np.sqrt(alpha**2 + beta**2)
-                m[k] = tauS * alpha
-                m[k1] = tauS * beta
-    return m
+from .._utils._utils import regularize_values, _select_interpolants
 
 
 class IdentitySpline:
@@ -93,6 +49,13 @@ class Spline:
         values are not extrapolated and result in NaN
         values. If `spline`, use the spline function
         for extrapolation.
+    limits
+        A list or array of fixed intensity values. These values will be
+        appended to the calculated quantiles and included to calculate
+        the spline functions. By default, the spline functions are extrapolated
+        linearly outside the observed data range, using the slope at the last
+        data point as the slope for the extrapolation. Use `limits` to further
+        control the behaviour outside the data range.
 
     """
     def __init__(self,
@@ -100,18 +63,29 @@ class Spline:
                  cluster: Union[float, str],
                  channel: str,
                  spline_calc_function: Callable = CubicHermiteSpline,
-                 extrapolate: Union[Literal["linear", "spline"], bool] = "linear"  # noqa
+                 extrapolate: Union[Literal["linear", "spline"], bool] = "linear", # noqa
+                 limits: Optional[Union[list[float], np.ndarray]] = None
                  ) -> None:
         self.batch = batch
         self.channel = channel
         self.cluster = cluster
         self.spline_calc_function = spline_calc_function
         self._extrapolate = extrapolate
+        self._limits = None
+
+        if self._limits is not None:
+            self._limits = np.array(self._limits)
 
     def _select_interpolants(self,
                              x: np.ndarray,
                              y: np.ndarray) -> np.ndarray:
         return _select_interpolants(x, y)
+
+    def _append_limits(self,
+                       arr: np.ndarray) -> np.ndarray:
+        if self._limits is None:
+            return arr
+        return np.hstack([arr, self._limits])
 
     def fit(self,
             current_distribution: Optional[np.ndarray],
@@ -119,7 +93,11 @@ class Spline:
             ) -> None:
         """\
         Interpolates a function between the current expression values
-        and the goal expression values.
+        and the goal expression values. First, limits are appended
+        and the arrays are regularized  in order to prevent duplicate
+        entries. Next, interpolants are selected using the Fritsch-Carlson
+        algorithm. The Cubic Hermite Spline is fitted and extrapolated
+        linearly outside of the data range.
 
         Parameters
         ----------
@@ -136,12 +114,22 @@ class Spline:
 
 
         """
+
         if self.spline_calc_function.__qualname__ == "IdentitySpline":
             self.fit_func = self.spline_calc_function()
         else:
             assert not self.is_fit()
             assert current_distribution is not None
             assert goal_distribution is not None
+
+            current_distribution = self._append_limits(current_distribution)
+            goal_distribution = self._append_limits(goal_distribution)
+            
+            current_distribution, goal_distribution = regularize_values(
+                current_distribution,
+                goal_distribution
+            )
+
             m = self._select_interpolants(
                 current_distribution,
                 goal_distribution
