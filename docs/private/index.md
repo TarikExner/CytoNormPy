@@ -12,8 +12,8 @@ import cytonormpy as cnp
 splines
 quantiles
 datahandler
+dataprovider
 warnings
-
 
 ```
 

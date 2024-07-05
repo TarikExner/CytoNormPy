@@ -1,4 +1,4 @@
-# Data Handlers
+# Data Providers
 
 
 ```{eval-rst}
@@ -9,8 +9,9 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
+    
+    DataProvider
+    DataProviderFCS
+    DataProviderAnnData
 
-    DataHandlerFCS
-    DataHandlerAnnData
-    FCSFile
 ```

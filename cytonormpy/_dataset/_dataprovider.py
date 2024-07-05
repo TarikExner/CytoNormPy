@@ -9,6 +9,9 @@ from typing import Union
 from ._datareader import DataReaderFCS
 
 class DataProvider:
+    """\
+    Base class for the data provider.
+    """
 
     def __init__(self,
                  sample_identifier_column,
@@ -25,7 +28,6 @@ class DataProvider:
         self._channels = channels
         self._transformer = transformer
 
-
     @property
     def channels(self):
         return self._channels
@@ -37,6 +39,20 @@ class DataProvider:
 
     def select_channels(self,
                         data: pd.DataFrame) -> pd.DataFrame:
+        """\
+        Subsets the channels in a dataframe.
+
+        Parameters
+        ----------
+        data
+            The expression data as a pandas DataFrame
+
+        Returns
+        -------
+        The data subset for the channels stored in the `_channels`
+        attribute.
+
+        """
         if self._channels is not None:
             return data[self._channels]
         return data
@@ -52,6 +68,20 @@ class DataProvider:
 
     def transform_data(self,
                        data: pd.DataFrame) -> pd.DataFrame:
+        """\
+        Transforms the data according to the transformer added
+        upon instantiation.
+
+        Parameters
+        ----------
+        data
+            The data passed as a pandas DataFrame.
+
+        Returns
+        -------
+        Dependent on the transformer, the transformed or the raw data.
+
+        """
         if self._transformer is not None:
             return pd.DataFrame(
                 data = self._transformer.transform(data.values),
@@ -62,6 +92,20 @@ class DataProvider:
 
     def inverse_transform_data(self,
                                data: pd.DataFrame) -> pd.DataFrame:
+        """\
+        Inverse transforms the data according to the transformer added
+        upon instantiation.
+
+        Parameters
+        ----------
+        data
+            The data passed as a pandas DataFrame.
+
+        Returns
+        -------
+        Dependent on the transformer, the transformed or the raw data.
+
+        """
         if self._transformer is not None:
             return pd.DataFrame(
                 data = self._transformer.inverse_transform(data.values),
@@ -73,6 +117,21 @@ class DataProvider:
     def annotate_metadata(self,
                           data: pd.DataFrame,
                           file_name: str) -> pd.DataFrame:
+        """\
+        Annotates metadata to the expression data.
+
+        Parameters
+        ----------
+        data
+            The data passed as a pandas DataFrame.
+        file_name
+            The file identifier that is used for the metadata lookup.
+
+        Returns
+        -------
+        The annotated expression data.
+
+        """
 
         ref_value = self._metadata.loc[
             self._metadata[self._sample_identifier_column] == file_name,
@@ -100,6 +159,12 @@ class DataProvider:
 
 
 class DataProviderFCS(DataProvider):
+    """\
+    Class to handle the data providing for FCS files.
+    This class will prepare a dataframe where the data
+    are annotated with the metadata and the relevant
+    channel data will be transformed.
+    """
 
     def __init__(self,
                  input_directory: Union[PathLike, str],
@@ -127,6 +192,20 @@ class DataProviderFCS(DataProvider):
 
     def prep_dataframe(self,
                        file_name: str) -> pd.DataFrame:
+        """\
+        Prepares the dataframe by annotating metadata,
+        selecting the relevant channels and transforming.
+        
+        Parameters
+        ----------
+        file_name
+            The file identifier of which the data are provided
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the expression data.
+
+        """
         data = self._reader.parse_fcs_df(file_name)
         data = self.annotate_metadata(data, file_name)
         data = self.select_channels(data)
@@ -135,6 +214,12 @@ class DataProviderFCS(DataProvider):
 
 
 class DataProviderAnnData(DataProvider):
+    """\
+    Class to handle the data providing for anndata objects.
+    This class will prepare a dataframe where the data
+    are annotated with the metadata and the relevant
+    channel data will be transformed.
+    """
 
     def __init__(self,
                  adata: AnnData,
@@ -160,6 +245,21 @@ class DataProviderAnnData(DataProvider):
 
     def parse_anndata_df(self,
                          file_name: str):
+        """\
+        Parses the expression data stored in the anndata object by the
+        sample identifier.
+        
+        Parameters
+        ----------
+        file_name
+            The file identifier of which the data are provided
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the raw expression data
+        of the specified file.
+
+        """
         return self._adata[
             self._adata.obs[self._sample_identifier_column] == file_name,
             :
@@ -167,6 +267,20 @@ class DataProviderAnnData(DataProvider):
 
     def prep_dataframe(self,
                        file_name: str) -> pd.DataFrame:
+        """\
+        Prepares the dataframe by annotating metadata,
+        selecting the relevant channels and transforming.
+        
+        Parameters
+        ----------
+        file_name
+            The file identifier of which the data are provided
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the expression data.
+
+        """
         data = self.parse_anndata_df(file_name)
         data = self.annotate_metadata(data, file_name)
         data = self.select_channels(data)

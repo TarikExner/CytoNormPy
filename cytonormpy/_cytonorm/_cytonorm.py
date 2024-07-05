@@ -3,6 +3,7 @@ from typing import Union, Optional, Literal
 from os import PathLike
 import numpy as np
 from anndata import AnnData
+import pickle
 import warnings
 
 import concurrent.futures as cf
@@ -729,7 +730,19 @@ class CytoNorm:
 
 
 def read_model(filename: Union[PathLike, str]) -> CytoNorm:
-    import pickle
+    """\
+    Read a model from disk.
+
+    Parameters
+    ----------
+    filename:
+        The filename of the model.
+
+    Returns
+    -------
+    A :class:`~cytonormpy.CytoNorm` object.
+
+    """
     with open(filename, "rb") as file:
         cytonorm_obj = pickle.load(file)
     return cytonorm_obj

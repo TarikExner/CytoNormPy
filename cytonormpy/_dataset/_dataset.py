@@ -163,6 +163,12 @@ class DataHandler:
     def get_batch(self,
                   file_name: str) -> str:
         """\
+        Returns the corresponding batch of a file.
+
+        Parameters
+        ----------
+        file_name
+            The sample identifier.
 
         Returns
         -------
@@ -202,6 +208,19 @@ class DataHandler:
 
     def get_corresponding_ref_dataframe(self,
                                         file_name: str) -> pd.DataFrame:
+        """
+        Returns the data of the corresponding reference
+        for the indicated file name.
+
+        Parameters
+        ----------
+        file_name
+            The file_name of the file being read.
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the expression data.
+        """
         corresponding_reference_file = \
             self._find_corresponding_reference_file(file_name)
         return self.get_dataframe(file_name = corresponding_reference_file)
@@ -218,6 +237,19 @@ class DataHandler:
 
     def get_ref_data_df_subsampled(self,
                                    n: int):
+        """
+        Returns the reference data frame, subsampled to
+        `n` events.
+
+        Parameters
+        ----------
+        n
+            The number of events to be subsampled.
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the expression data.
+        """
         assert isinstance(self.ref_data_df, pd.DataFrame)
         return self._subsample_df(self.ref_data_df, n)
 
@@ -227,6 +259,13 @@ class DataHandler:
         return df.sample(n = n, axis = 0, random_state = 187)
 
     def get_ref_data_df(self) -> pd.DataFrame:
+        """
+        Returns the reference data frame.
+
+        Returns
+        -------
+        A :class:`pandas.DataFrame` containing the expression data.
+        """
         assert isinstance(self.ref_data_df, pd.DataFrame)
         return self.ref_data_df
 

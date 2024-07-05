@@ -34,6 +34,8 @@ Main tasks have been divided into the following classes:
     Plotter
 
 ```
+
+
 <br/><br/>
 Clustering can be achieved using one the four implemented clustering algorithms:
 
@@ -50,6 +52,8 @@ Clustering can be achieved using one the four implemented clustering algorithms:
     MeanShift
     AffinityPropagation
 ```
+
+
 <br/><br/>
 Implemented transformations include Asinh, Log, Logicle and Hyperlog.
 
@@ -65,5 +69,19 @@ Implemented transformations include Asinh, Log, Logicle and Hyperlog.
     LogTransformer
     LogicleTransformer
     HyperLogTransformer
+```
+
+<br/><br/>
+In order to read the model, use the respective utility functions.
+
+```{eval-rst}
+
+.. currentmodule:: cytonormpy
+
+.. autosummary::
+    :toctree: ../generated/
+    :nosignatures:
+
+    read_model
 ```
 
