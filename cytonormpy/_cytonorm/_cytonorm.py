@@ -567,6 +567,10 @@ class CytoNorm:
     def _normalize_file(self,
                         df: pd.DataFrame,
                         batch: str) -> pd.DataFrame:
+        """\
+        Private function to run the normalization. Can be
+        called from self.normalize_data() and self.normalize_file().
+        """
 
         data = df.to_numpy(copy = True)
         
@@ -613,6 +617,10 @@ class CytoNorm:
 
     def _run_normalization(self,
                            file: str) -> None:
+        """\
+        wrapper function to coordinate the normalization and file writing
+        in order to allow for parallelisation.
+        """
         df = self._datahandler.get_dataframe(file_name = file)
 
         batch = self._datahandler.get_batch(file_name = file)
@@ -628,13 +636,28 @@ class CytoNorm:
         return
 
     def normalize_data(self,
+                       adata: Optional[AnnData] = None,
+                       file_names: Optional[Union[list[str], str]] = None,
+                       batches: Optional[Union[list[Union[str, int]], Union[str, int]]] = None,
                        n_jobs: int = 8) -> None:
         """\
         Applies the normalization procedure to the files and writes
         the data to disk or to the anndata file.
 
+        Use the `file_names` and `batches` parameters to normalize data
+        that were not yet available upon setup.
+
         Parameters
         ----------
+        adata
+            Optional. If passed, it is assumed that the original anndata
+            object has been modified. If left `None`, the original
+            anndata will be used.
+        file_names:
+            Optional. If left `None`, the validation files from the
+            cytonorm object will be used.
+        batches
+            Optional. Specifies the batches of `file_names`.
         n_jobs
             Number of threads used for data analysis.
         
@@ -643,7 +666,23 @@ class CytoNorm:
         None
 
         """
-        file_names = self._datahandler.validation_file_names
+        if adata is not None:
+            assert isinstance(self._datahandler, DataHandlerAnnData)
+            self._datahandler.adata = adata
+            self._datahandler._provider._adata = adata
+
+        if file_names is None:
+            file_names = self._datahandler.validation_file_names
+        else:
+            assert batches is not None
+            if not isinstance(file_names, list):
+                file_names = [file_names]
+            if not isinstance(batches, list):
+                batches = [batches]
+            if not len(file_names) == len(batches):
+                raise ValueError("Please provide a batch for every file.")
+            for file_name, batch in zip(file_names, batches):
+                self._datahandler._add_file(file_name, batch)
 
         with cf.ThreadPoolExecutor(max_workers = n_jobs) as p:
             p.map(self._run_normalization, [file for file in file_names])
@@ -687,7 +726,6 @@ class CytoNorm:
         import pickle
         with open(filename, "wb") as file:
             pickle.dump(self, file)
-
 
 
 def read_model(filename: Union[PathLike, str]) -> CytoNorm:

@@ -18,6 +18,10 @@ def test_init_metadata_columns(datahandleranndata: DataHandlerAnnData):
     assert dh._batch_column == "BATCHZ"
     assert dh._sample_identifier_column == "diverse"
 
+def test_val_value(datahandleranndata: DataHandlerAnnData):
+    dh = datahandleranndata
+    assert dh._validation_value == "other"
+
 def test_validate_metadata_table(datahandleranndata: DataHandlerAnnData,
                                  metadata: pd.DataFrame):
     dh = datahandleranndata
@@ -367,4 +371,22 @@ def test_technical_setters(datahandleranndata: DataHandlerAnnData):
     new_list = ["some", "channels"]
     dh.flow_technicals = new_list
     assert dh.flow_technicals == ["some", "channels"]
+
+def test_add_file_fcs(datahandlerfcs: DataHandlerFCS):
+    dh = datahandlerfcs
+    file_name = "my_new_file"
+    batch = 2
+    dh._add_file(file_name, batch)
+    assert "my_new_file" in dh._metadata["file_name"].tolist()
+    assert dh._metadata.loc[dh._metadata["file_name"] == file_name, "batch"].iloc[0] == batch
+    assert dh._metadata.equals(dh._provider._metadata)
+
+def test_add_file_anndata(datahandleranndata: DataHandlerAnnData):
+    dh = datahandleranndata
+    file_name = "my_new_file"
+    batch = 2
+    dh._add_file(file_name, batch)
+    assert "my_new_file" in dh._metadata["file_name"].tolist()
+    assert dh._metadata.loc[dh._metadata["file_name"] == file_name, "batch"].iloc[0] == batch
+    assert dh._metadata.equals(dh._provider._metadata)
 

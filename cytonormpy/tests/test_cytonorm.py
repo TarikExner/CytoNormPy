@@ -1,9 +1,11 @@
 import pytest
+import anndata as ad
+import os
 from anndata import AnnData
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from cytonormpy import CytoNorm
+from cytonormpy import CytoNorm, FCSFile
 import cytonormpy as cnp
 import warnings
 from cytonormpy._transformation._transformations import AsinhTransformer, Transformer
@@ -75,8 +77,7 @@ def test_run_clustering_appropriate_clustering(data_anndata: AnnData):
     assert "clusters" in cn._datahandler.ref_data_df.index.names
 
 
-def test_run_clustering_above_cv(data_anndata: AnnData,
-                                 metadata: pd.DataFrame,
+def test_run_clustering_above_cv(metadata: pd.DataFrame,
                                  INPUT_DIR: Path):
     cn = cnp.CytoNorm()
     # cn.run_anndata_setup(adata = data_anndata)
@@ -385,11 +386,6 @@ class CytoNormPandasLookupQuantileCalc(CytoNorm):
             n_clusters = n_clusters
         )
 
-        # potentially this needs optimizing in the future.
-        # compare slice indexing of fp.tl.gate_frequencies_mem.
-        # For now, we sort the index and hope for the best.
-
-        # we store the clusters that could not be calculated for later.
         self._not_calculated = {
             batch: [] for batch in self.batches
         }
@@ -536,4 +532,67 @@ def test_spline_calc_limits_errors(metadata: pd.DataFrame,
         cn.calculate_splines(limits = "limitless computation!")
     cn.calculate_splines(limits = [0,8])
 
+
+def test_normalizing_files_that_have_been_added_later(metadata: pd.DataFrame,
+                                                      INPUT_DIR: Path,
+                                                      tmpdir):
+    t = cnp.AsinhTransformer()
+
+    cn = CytoNorm()
+    cn.add_transformer(t)
+    cn.run_fcs_data_setup(input_directory = INPUT_DIR,
+                          metadata = metadata,
+                          channels = "markers",
+                          output_directory = tmpdir)
+    cn.calculate_quantiles()
+    cn.calculate_splines(limits = [0,8])
+    cn.normalize_data()
+
+    cn.normalize_data(file_names = "Gates_PTLG034_Unstim_Control_2_dup.fcs",
+                      batches = 3)
+    assert "Norm_Gates_PTLG034_Unstim_Control_2_dup.fcs" in os.listdir(tmpdir)
+    original_fcs = FCSFile(tmpdir, "Norm_Gates_PTLG034_Unstim_Control_2.fcs")
+    dup_fcs = FCSFile(tmpdir, "Norm_Gates_PTLG034_Unstim_Control_2_dup.fcs")
+    assert np.array_equal(
+        original_fcs.original_events,
+        dup_fcs.original_events
+    )
+
+def test_normalizing_files_that_have_been_added_later_anndata(data_anndata: AnnData):
+    adata = data_anndata
+    file_name = "Gates_PTLG034_Unstim_Control_2.fcs"
+    file_spec_adata = adata[adata.obs["file_name"] == file_name, :].copy()
+    dup_filename = "Gates_PTLG034_Unstim_Control_2_dup.fcs"
+    file_spec_adata.obs["file_name"] = dup_filename
+    adata.obs["batch"] = adata.obs["batch"].astype(np.int8)
+
+    cn = CytoNorm()
+    cn.run_anndata_setup(adata = adata)
+    cn.calculate_quantiles()
+    cn.calculate_splines()
+    cn.normalize_data()
+    assert "cyto_normalized" in adata.layers.keys()
+
+    longer_adata = ad.concat([adata, file_spec_adata], axis = 0, join = "outer")
+    longer_adata.obs_names_make_unique()
+    assert "cyto_normalized" in longer_adata.layers.keys()
+
+    cn.normalize_data(adata = longer_adata,
+                      file_names = dup_filename,
+                      batches = 3)
+    assert "cyto_normalized" in longer_adata.layers.keys()
+
+    file_adata = longer_adata[longer_adata.obs["file_name"] == file_name,:].copy()
+    dup_file_adata = longer_adata[longer_adata.obs["file_name"] == dup_filename,:].copy()
+
+    assert np.array_equal(
+        file_adata.layers["cyto_normalized"],
+        dup_file_adata.layers["cyto_normalized"]
+    )
+    
+def test_normalizing_files_that_have_been_added_later_valueerror():
+    cn = CytoNorm()
+    with pytest.raises(ValueError):
+        cn.normalize_data(file_names = "Gates_PTLG034_Unstim_Control_2_dup.fcs",
+                          batches = [3, 4])
 

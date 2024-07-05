@@ -58,6 +58,11 @@ class DataHandler:
         self._validate_metadata_table(metadata)
         self._validate_batch_references(metadata)
 
+        self._validation_value = list(set([
+            val for val in metadata[self._reference_column]
+            if val != self._reference_value
+        ]))[0]
+
         self._metadata = metadata
 
         self.ref_file_names = self._get_reference_file_names()
@@ -118,6 +123,30 @@ class DataHandler:
     def append_cytof_technicals(self,
                                 value):
         self.cytof_technicals.append(value)
+
+    def _add_file_to_metadata(self,
+                              file_name,
+                              batch):
+        new_file_df = pd.DataFrame(
+            data = [[file_name, self._validation_value, batch]],
+            columns = [
+                self._sample_identifier_column,
+                self._reference_column,
+                self._batch_column
+            ],
+            index = [-1]
+        )
+        self._metadata = pd.concat([self._metadata, new_file_df], axis = 0).reset_index(drop = True)
+        self._provider._metadata = self._metadata
+
+    def _add_file(self,
+                  file_name,
+                  batch):
+        self._add_file_to_metadata(file_name, batch)
+        if isinstance(self, DataHandlerAnnData):
+            obs_idxs = self._find_obs_idxs(file_name)
+            arr_idxs = self._get_array_indices(obs_idxs)
+            self._copy_input_values_to_key_added(arr_idxs)
 
     def _init_metadata_columns(self,
                                reference_column: str,
@@ -601,6 +630,22 @@ class DataHandlerAnnData(DataHandler):
             transformer = transformer
         )
 
+    def _find_obs_idxs(self,
+                       file_name) -> pd.Index:
+        return self.adata.obs.loc[
+            self.adata.obs[self._sample_identifier_column] == file_name,
+            :
+        ].index
+
+    def _get_array_indices(self,
+                           obs_idxs: pd.Index) -> np.ndarray:
+        return self.adata.obs.index.get_indexer(obs_idxs)
+
+    def _copy_input_values_to_key_added(self,
+                                        idxs: np.ndarray) -> None:
+        self.adata.layers[self._key_added][idxs, :] = \
+            self.adata.layers[self._layer][idxs, :]
+
     def write(self,
               file_name: str,
               data: pd.DataFrame) -> None:
@@ -620,14 +665,10 @@ class DataHandlerAnnData(DataHandler):
         None
 
         """
-
-        obs_idxs = self.adata.obs.loc[
-            self.adata.obs["file_name"] == file_name,
-            :
-        ].index
+        obs_idxs = self._find_obs_idxs(file_name)
 
         # leaving at pd.Index type is 2x faster
-        arr_idxs = self.adata.obs.index.get_indexer(obs_idxs)
+        arr_idxs = self._get_array_indices(obs_idxs)
 
         channel_indices = self._find_channel_indices_in_adata(data.columns)
 
