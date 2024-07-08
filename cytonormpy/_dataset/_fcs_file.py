@@ -55,7 +55,7 @@ class FCSFile:
             f'transform status: {self.transform_status})'
         )
 
-    def to_df(self):
+    def to_df(self) -> pd.DataFrame:
         return pd.DataFrame(
             data = self.original_events,
             index = pd.Index(list(range(self.event_count))),

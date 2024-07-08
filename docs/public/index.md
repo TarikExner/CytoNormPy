@@ -85,3 +85,22 @@ In order to read the model, use the respective utility functions.
     read_model
 ```
 
+<br/><br/>
+Evaluation functions for MAD calculation have been implemented
+in the following functions:
+
+```{eval-rst}
+
+.. currentmodule:: cytonormpy
+
+.. autosummary::
+    :toctree: ../generated/
+    :nosignatures:
+
+    mad_from_fcs
+    mad_comparison_from_fcs
+    mad_from_anndata
+    mad_comparison_from_anndata
+```
+
+

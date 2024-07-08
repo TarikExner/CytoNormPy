@@ -110,6 +110,149 @@ class Plotter:
         kwargs["linewidth"] = kwargs.get("linewidth", 0.1)
         return kwargs
 
+    def _prepare_mad_frame(self,
+                           mad_frame: pd.DataFrame,
+                           file_name: Optional[Union[list[str], str]] = None,
+                           channels: Optional[Union[list[str], str]] = None,
+                           labels: Optional[Union[list[str], str]] = None) -> pd.DataFrame:
+        mad_frame = mad_frame.reset_index()
+        melted = mad_frame.melt(id_vars = ["file_name", "origin", "label"],
+                                var_name = "channel",
+                                value_name = "value")
+        df = melted.pivot_table(index = ["file_name", "label", "channel"],
+                                columns = "origin",
+                                values = "value").reset_index()
+        if file_name is not None:
+            if not isinstance(file_name, list):
+                file_name = [file_name]
+            df = df.loc[df["file_name"].isin(file_name),:]
+
+        if channels is not None:
+            if not isinstance(channels, list):
+                channels = [channels]
+            df = df.loc[df["channel"].isin(channels),:]
+
+        if labels is not None:
+            if not isinstance(labels, list):
+                labels = [labels]
+            df = df.loc[df["label"].isin(labels),:]
+
+        return df
+
+    def mad(self,
+            colorby: str,
+            data: Optional[pd.DataFrame] = None,
+            file_name: Optional[Union[list[str], str]] = None,
+            channels: Optional[Union[list[str], str]] = None,
+            labels: Optional[Union[list[str], str]] = None,
+            mad_cutoff: float = 0.25,
+            figsize: tuple[float, float] = (2, 2),
+            ax: Optional[Axes] = None,
+            return_fig: bool = False,
+            show: bool = True,
+            save: Optional[str] = None,
+            **kwargs
+            ):
+        """\
+        MAD plot visualization.
+
+        Parameters
+        ----------
+        colorby
+            Selects the coloring of the data points. Can be any
+            variable that was used for grouping or the channels.
+        data
+            Optional. If not plotted from a cytonorm object, data
+            can be passed. Has to contain the index columns 'file_name',
+            'label' and 'origin' (containing 'original' and
+            'normalized').
+        file_name
+            Optional. Can be used to select one or multiple files.
+        channels
+            Optional. Can be used to select one or more channels.
+        labels
+            Optional. Can be used to select one or more cell labels.
+        mad_cutoff
+            A red dashed line that is plotted, signifying a cutoff
+            for an MAD-change.
+        ax
+            A Matplotlib Axes to plot into.
+        return_fig
+            Returns the figure. Defaults to False.
+        show
+            Whether to show the figure.
+        save
+            A string specifying a file path. Defaults
+            to None, where no image is saved.
+        kwargs
+            keyword arguments ultimately passed to
+            sns.scatterplot.
+
+        Returns
+        -------
+        If `show==False`, a :class:`~matplotlib.axes.Axes`.
+
+
+        Examples
+        --------
+        .. plot::
+            :context: close-figs
+
+            import cytonormpy as cnp
+
+            cn = cnp.example_cytonorm()
+            cnpl = cnp.Plotter(cytonorm = cn)
+
+            cnpl.mad(colorby = "file_name",
+                     s = 10,
+                     linewidth = 0.4,
+                     edgecolor = "black",
+                     figsize = (4,4))
+        """
+        if data is None:
+            mad_frame = self.cnp.mad_frame
+        else:
+            mad_frame = data
+
+        df = self._prepare_mad_frame(mad_frame,
+                                     file_name,
+                                     channels,
+                                     labels)
+
+        if ax is None:
+            fig, ax = plt.subplots(ncols = 1,
+                                   nrows = 1,
+                                   figsize = figsize)
+        else:
+            fig = None,
+            ax = ax
+        assert ax is not None
+
+        plot_kwargs = {
+            "data": df,
+            "x": "original",
+            "y": "normalized",
+            "hue": colorby,
+            "ax": ax
+        }
+        sns.scatterplot(**plot_kwargs,
+                        **kwargs)
+        ax.set_ylim(ax.get_xlim())
+        upper_bound_x = list(ax.get_xlim())
+        upper_bound_y = [val + mad_cutoff for val in upper_bound_x]
+        lower_bound_x = list(ax.get_ylim())
+        lower_bound_y = [val - mad_cutoff for val in lower_bound_x]
+        ax.plot(upper_bound_x, upper_bound_y, color = "red", linestyle = "--")
+        ax.plot(upper_bound_x, lower_bound_y, color = "red", linestyle = "--")
+        ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
+
+        return self._save_or_show(ax = ax,
+                                  fig = fig,
+                                  save = save,
+                                  show = show,
+                                  return_fig = return_fig)
+
+
     def histogram(self,
                   file_name: str,
                   x_channel: str,

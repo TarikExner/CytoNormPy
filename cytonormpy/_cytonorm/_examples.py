@@ -5,6 +5,9 @@ from anndata import AnnData
 import anndata as ad
 import numpy as np
 
+import tempfile
+import shutil
+
 from ._cytonorm import CytoNorm
 from .._clustering import FlowSOM
 from .._dataset import FCSFile
@@ -60,6 +63,7 @@ def example_anndata() -> AnnData:
 
 
 def example_cytonorm():
+    tmp_dir = tempfile.mkdtemp()
     data_dir = Path(__file__).parent.parent
     metadata = pd.read_csv(os.path.join(data_dir, "_resources/metadata_sid.csv"))
     cn = CytoNorm()
@@ -69,12 +73,16 @@ def example_cytonorm():
     cn.add_transformer(t)
     cn.run_fcs_data_setup(
         input_directory = os.path.join(data_dir, "_resources"),
-        metadata = metadata
+        metadata = metadata,
+        output_directory = tmp_dir
     )
     cn.run_clustering(cluster_cv_threshold = 2)
     cn.calculate_quantiles()
     cn.calculate_splines(goal = "batch_mean")
     cn.normalize_data()
+    cn.calculate_mad(groupby = ["file_name"])
+
+    shutil.rmtree(tmp_dir)
 
     return cn
     

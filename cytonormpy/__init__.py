@@ -10,7 +10,11 @@ from ._transformation import (AsinhTransformer,
                               LogicleTransformer,
                               Transformer)
 from ._plotting import Plotter
-from ._cytonorm import read_model, evaluate_mad
+from ._cytonorm import (read_model,
+                        mad_from_fcs,
+                        mad_comparison_from_fcs,
+                        mad_from_anndata,
+                        mad_comparison_from_anndata)
 
 
 __all__ = [
@@ -34,5 +38,8 @@ __all__ = [
     "FCSFile",
 
     "read_model",
-    "evaluate_mad"
+    "mad_from_fcs",
+    "mad_comparison_from_fcs",
+    "mad_from_anndata",
+    "mad_comparison_from_anndata"
 ]

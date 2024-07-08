@@ -114,11 +114,83 @@ class DataProvider:
             )
         return data
 
+    def _annotate_sample_identifier(self,
+                                    data: pd.DataFrame,
+                                    file_name: str) -> pd.DataFrame:
+        """\
+        Annotates the sample identifier to the expression data.
+
+        Parameters
+        ----------
+        data
+            The data passed as a pandas DataFrame.
+        file_name
+            The file identifier that is used for the metadata lookup.
+
+        Returns
+        -------
+        The annotated expression data.
+
+        """
+        data[self._sample_identifier_column] = file_name
+        return data
+
+    def _annotate_reference_value(self,
+                                  data: pd.DataFrame,
+                                  file_name: str) -> pd.DataFrame:
+        """\
+        Annotates the reference value to the expression data.
+
+        Parameters
+        ----------
+        data
+            The data passed as a pandas DataFrame.
+        file_name
+            The file identifier that is used for the metadata lookup.
+
+        Returns
+        -------
+        The annotated expression data.
+
+        """
+        ref_value = self._metadata.loc[
+            self._metadata[self._sample_identifier_column] == file_name,
+            self._reference_column
+        ].iloc[0]
+        data[self._reference_column] = ref_value
+        return data
+
+    def _annotate_batch_value(self,
+                              data: pd.DataFrame,
+                              file_name: str) -> pd.DataFrame:
+        """\
+        Annotates the batch number to the expression data.
+
+        Parameters
+        ----------
+        data
+            The data passed as a pandas DataFrame.
+        file_name
+            The file identifier that is used for the metadata lookup.
+
+        Returns
+        -------
+        The annotated expression data.
+
+        """
+        batch_value = self._metadata.loc[
+            self._metadata[self._sample_identifier_column] == file_name,
+            self._batch_column
+        ].iloc[0]
+        data[self._batch_column] = batch_value
+        return data
+
     def annotate_metadata(self,
                           data: pd.DataFrame,
                           file_name: str) -> pd.DataFrame:
         """\
-        Annotates metadata to the expression data.
+        Annotates metadata (sample identifier, batch value and
+        reference value) to the expression data.
 
         Parameters
         ----------
@@ -133,20 +205,9 @@ class DataProvider:
 
         """
 
-        ref_value = self._metadata.loc[
-            self._metadata[self._sample_identifier_column] == file_name,
-            self._reference_column
-        ].iloc[0]
-
-        batch_value = self._metadata.loc[
-            self._metadata[self._sample_identifier_column] == file_name,
-            self._batch_column
-        ].iloc[0]
-
-        data[self._reference_column] = ref_value
-        data[self._batch_column] = batch_value
-        data[self._sample_identifier_column] = file_name
-
+        self._annotate_reference_value(data, file_name)
+        self._annotate_batch_value(data, file_name)
+        self._annotate_sample_identifier(data, file_name)
         data = data.set_index(
             [
                 self._reference_column,
@@ -168,12 +229,12 @@ class DataProviderFCS(DataProvider):
 
     def __init__(self,
                  input_directory: Union[PathLike, str],
-                 truncate_max_range: bool,
-                 sample_identifier_column: str,
-                 reference_column: str,
-                 batch_column: str,
-                 metadata: pd.DataFrame,
-                 channels: Optional[list[str]],
+                 truncate_max_range: bool = False,
+                 sample_identifier_column: Optional[str] = None,
+                 reference_column: Optional[str] = None,
+                 batch_column: Optional[str] = None,
+                 metadata: Optional[pd.DataFrame] = None,
+                 channels: Optional[list[str]] = None,
                  transformer: Optional[Transformer] = None) -> None:
 
         super().__init__(
@@ -224,11 +285,11 @@ class DataProviderAnnData(DataProvider):
     def __init__(self,
                  adata: AnnData,
                  layer: str,
-                 sample_identifier_column: str,
-                 reference_column: str,
-                 batch_column: str,
-                 metadata: pd.DataFrame,
-                 channels: Optional[list[str]],
+                 sample_identifier_column: Optional[str] = None,
+                 reference_column: Optional[str] = None,
+                 batch_column: Optional[str] = None,
+                 metadata: Optional[pd.DataFrame] = None,
+                 channels: Optional[list[str]] = None,
                  transformer: Optional[Transformer] = None) -> None:
 
         super().__init__(
@@ -244,7 +305,7 @@ class DataProviderAnnData(DataProvider):
         self._layer = layer
 
     def parse_anndata_df(self,
-                         file_name: str):
+                         file_names: Union[list[str], str]) -> pd.DataFrame:
         """\
         Parses the expression data stored in the anndata object by the
         sample identifier.
@@ -252,7 +313,8 @@ class DataProviderAnnData(DataProvider):
         Parameters
         ----------
         file_name
-            The file identifier of which the data are provided
+            The file identifier of which the data are provided. Can be
+            a list of files.
 
         Returns
         -------
@@ -260,8 +322,10 @@ class DataProviderAnnData(DataProvider):
         of the specified file.
 
         """
+        if not isinstance(file_names, list):
+            file_names = [file_names]
         return self._adata[
-            self._adata.obs[self._sample_identifier_column] == file_name,
+            self._adata.obs[self._sample_identifier_column].isin(file_names),
             :
         ].to_df(layer = self._layer)
 
