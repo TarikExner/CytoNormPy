@@ -35,6 +35,8 @@ def test_data_setup_fcs(INPUT_DIR,
     df = cn.mad_frame
     assert all(ch in df.columns for ch in cn._datahandler.channels)
     assert all(entry in df.index.names for entry in ["origin", "label"])
+    assert df.index.get_level_values("label").nunique() == 1
+    assert df.index.get_level_values("origin").nunique() == 2
     assert df.shape[0] == 2
 
     label_dict = {}

@@ -10,9 +10,12 @@ import concurrent.futures as cf
 
 from ._utils import _all_cvs_below_cutoff, ClusterCVWarning
 
-from ._evaluation import (mad_from_fcs,
-                          mad_comparison_from_fcs,
-                          mad_comparison_from_anndata)
+from .._evaluation import (mad_from_fcs,
+                           mad_comparison_from_fcs,
+                           mad_comparison_from_anndata,
+                           emd_from_fcs,
+                           emd_comparison_from_fcs,
+                           emd_comparison_from_anndata)
 
 from .._dataset._dataset import (DataHandlerFCS,
                                  DataHandler,
@@ -748,7 +751,7 @@ class CytoNorm:
             If an anndata object was used, pass a string referring to
             the respective `.obs` column. If FCS files were used,
             pass a dictionary of shape {file_name: [label1, label2,..., labeln]}.
-            Labels will be annotated to the data an can be used in
+            Labels will be annotated to the data and can be used in
             `groupby`.
 
         Returns
@@ -764,7 +767,7 @@ class CytoNorm:
             "channels": self._datahandler.channels,
             "groupby": groupby,
             "transformer": self._datahandler._provider._transformer,
-            "cell_labels": cell_labels,
+            "cell_labels": cell_labels
         }
         if isinstance(self._datahandler, DataHandlerFCS):
             fcs_kwargs = {
@@ -823,6 +826,89 @@ class CytoNorm:
                 **general_kwargs
             )
 
+    def calculate_emd(self,
+                      cell_labels: Optional[Union[str, dict]] = None):
+        """\
+        Calculates the EMD on the normalized and unnormalized samples.
+
+        Parameters
+        ----------
+        cell_labels:
+            If an anndata object was used, pass a string referring to
+            the respective `.obs` column. If FCS files were used,
+            pass a dictionary of shape {file_name: [label1, label2,..., labeln]}.
+            Labels will be annotated to the data.
+
+        Returns
+        -------
+        None.
+        Will add an attribute `.mad_frame` that can be accessed,
+        containing an index with 'file_name', 'origin' and 'label'.
+        If no labels have been passed, 'label' will only contain the
+        entry 'all_cells'.
+
+        """
+        general_kwargs = {
+            "channels": self._datahandler.channels,
+            "transformer": self._datahandler._provider._transformer,
+            "cell_labels": cell_labels,
+        }
+        if isinstance(self._datahandler, DataHandlerFCS):
+            fcs_kwargs = {
+                "truncate_max_range": self._datahandler._provider._reader._truncate_max_range
+            }
+
+            if not self._datahandler._input_dir == self._datahandler._output_dir:
+                orig_frame = emd_from_fcs(
+                    input_directory = self._datahandler._input_dir,
+                    files = self._datahandler.validation_file_names,
+                    origin = "original",
+                    **fcs_kwargs,
+                    **general_kwargs
+                )
+                norm_frame = emd_from_fcs(
+                    input_directory = self._datahandler._output_dir,
+                    files = [
+                        f"{self._datahandler._prefix}_{file}"
+                        for file in self._datahandler.validation_file_names
+                    ],
+                    origin = "normalized",
+                    **fcs_kwargs,
+                    **general_kwargs
+                )
+                # we have to rename the file_names
+                df = pd.concat([orig_frame, norm_frame], axis = 0)
+                if "file_name" in df.index.names:
+                    df = df.reset_index(level = "file_name")
+                    df["file_name"] = [
+                        entry.strip(self._datahandler._prefix + "_")
+                        for entry in df["file_name"].tolist()
+                    ]
+                    df = df.set_index("file_name", append = True, drop = True)
+
+                self.emd_frame = df
+
+            else:
+                self.emd_frame = emd_comparison_from_fcs(
+                    input_directory = self._datahandler._input_dir,
+                    original_files = self._datahandler.validation_file_names,
+                    normalized_files = [
+                        f"{self._datahandler._prefix}_{file}"
+                        for file in self._datahandler.validation_file_names
+                    ],
+                    norm_prefix = self._datahandler._prefix,
+                    **fcs_kwargs,
+                    **general_kwargs
+                )
+        elif isinstance(self._datahandler, DataHandlerAnnData):
+            self.emd_frame = emd_comparison_from_anndata(
+                adata = self._datahandler.adata,
+                file_list = self._datahandler.validation_file_names,
+                orig_layer = self._datahandler._layer,
+                norm_layer = self._datahandler._key_added,
+                sample_identifier_column = self._datahandler._sample_identifier_column,
+                **general_kwargs
+            )
 
 
 

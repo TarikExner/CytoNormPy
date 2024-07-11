@@ -8,7 +8,7 @@ import fnmatch
 import readfcs
 import re
 
-def calculate_emds(input_directory,files, channels,input_directory_ct=None,ct_files=None,cell_types_list=None,transform=False):
+def calculate_emds(input_directory, files, channels,input_directory_ct=None,ct_files=None,cell_types_list=None,transform=False):
     '''
     Input:
     - input_directory (str) : directory where the fcs files are stored
@@ -154,7 +154,7 @@ def bin_array(values):
     Input:
     - values (array) : array of values
 
-    Returns:
+    eeturns:
     > a tuple with two arrays: the first array contains the binning, the second array contains the bin weights used to compute the EMD in the 'compute_emds_fromdict_ct' function
     '''
     bins = np.arange(-100, 100.1, 0.1)+0.0000001  # 2000 bins, the 0.0000001 is to avoid the left edge being included in the bin (Mainly impacting 0 values)

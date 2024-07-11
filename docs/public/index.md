@@ -104,3 +104,23 @@ in the following functions:
 ```
 
 
+<br/><br/>
+Evaluation functions for EMD calculation have been implemented
+in the following functions:
+
+```{eval-rst}
+
+.. currentmodule:: cytonormpy
+
+.. autosummary::
+    :toctree: ../generated/
+    :nosignatures:
+
+
+    emd_from_fcs
+    emd_comparison_from_fcs
+    emd_from_anndata
+    emd_comparison_from_anndata
+
+```
+
