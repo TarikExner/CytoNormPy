@@ -199,7 +199,7 @@ def mad_comparison_from_fcs(input_directory: PathLike,
     norm_files = kwargs.pop("normalized_files")
     norm_prefix = kwargs.pop("norm_prefix")
     orig_df = mad_from_fcs(
-        origin = "unnormalized",
+        origin = "original",
         files = orig_files,
         **kwargs
     )

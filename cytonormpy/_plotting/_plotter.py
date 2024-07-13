@@ -132,6 +132,7 @@ class Plotter:
                     continue
                 # we plot a line to compare the EMD values
                 self._draw_comp_line(ax[i])
+                ax[i].set_title("EMD comparison")
 
             ax = ax.reshape(ax_shape)
 
@@ -158,7 +159,9 @@ class Plotter:
             sns.scatterplot(**plot_kwargs,
                             **kwargs)
             self._draw_comp_line(ax)
-            ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
+            ax.set_title("EMD comparison")
+            if colorby is not None:
+                ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
 
         return self._save_or_show(
             ax = ax,
@@ -282,6 +285,7 @@ class Plotter:
                     continue
                 # we plot a line to compare the MAD values
                 self._draw_cutoff_line(ax[i], cutoff = mad_cutoff)
+                ax[i].set_title("MAD comparison")
 
             ax = ax.reshape(ax_shape)
 
@@ -308,7 +312,9 @@ class Plotter:
             sns.scatterplot(**plot_kwargs,
                             **kwargs)
             self._draw_cutoff_line(ax, cutoff = mad_cutoff)
-            ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
+            ax.set_title("MAD comparison")
+            if colorby is not None:
+                ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
 
         return self._save_or_show(
             ax = ax,
@@ -327,6 +333,7 @@ class Plotter:
                   xlim: Optional[tuple[float, float]] = None,
                   ylim: Optional[tuple[float, float]] = None,
                   linthresh: float = 500,
+                  subsample: Optional[int] = None,
                   display_reference: bool = True,
                   grid: Optional[Literal["channels"]] = None,
                   grid_n_cols: Optional[int] = None,
@@ -360,6 +367,9 @@ class Plotter:
         linthresh
             The value to switch from a linear to a log axis.
             Ignored if neither x- nor y-scale are `biex`.
+        subsample
+            A number of events to subsample to. Can prevent
+            overcrowding of the plot.
         display_reference
             Whether to display the reference data from
             that batch as well. Defaults to True.
@@ -417,7 +427,8 @@ class Plotter:
 
         data = self._prepare_data(file_name,
                                   display_reference,
-                                  channels)
+                                  channels,
+                                  subsample = subsample)
 
         kde_kwargs = {}
         hues = data.index.get_level_values("origin").unique().sort_values()
@@ -536,6 +547,7 @@ class Plotter:
                 xlim: Optional[tuple[float, float]] = None,
                 ylim: Optional[tuple[float, float]] = None,
                 legend_labels: Optional[list[str]] = None,
+                subsample: Optional[int] = None,
                 linthresh: float = 500,
                 display_reference: bool = True,
                 figsize: tuple[float, float] = (2, 2),
@@ -570,6 +582,9 @@ class Plotter:
             Sets the y-axis limits.
         legend_labels
             The labels displayed in the legend.
+        subsample
+            A number of events to subsample to. Can prevent
+            overcrowding of the plot.
         linthresh
             The value to switch from a linear to a log axis.
             Ignored if neither x- nor y-scale are `biex`.
@@ -618,7 +633,8 @@ class Plotter:
 
         data = self._prepare_data(file_name,
                                   display_reference,
-                                  channels = None)
+                                  channels = None,
+                                  subsample = subsample)
 
         if ax is None:
             fig, ax = plt.subplots(ncols = 1,
@@ -792,6 +808,7 @@ class Plotter:
             ax = ax,
             **kwargs
         )
+        ax.set_title(channel)
         self._handle_axis(ax = ax,
                           x_scale = x_scale,
                           y_scale = y_scale,
@@ -1015,6 +1032,7 @@ class Plotter:
                       file_name: str,
                       display_reference: bool,
                       channels: Optional[Union[list[str], str]],
+                      subsample: Optional[int]
                       ) -> pd.DataFrame:
 
         original_df = self.cnp._datahandler \
@@ -1057,7 +1075,10 @@ class Plotter:
         if channels is not None:
             data = data[channels]
 
-        data = data.sample(frac = 1)  # overlays are better shuffled
+        if subsample:
+            data = data.sample(n = subsample)
+        else:
+            data = data.sample(frac = 1)  # overlays are better shuffled
 
         return data
 
