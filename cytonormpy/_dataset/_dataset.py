@@ -1,22 +1,22 @@
 import os
-from os import PathLike
 import pandas as pd
 import numpy as np
+import warnings
+
+from os import PathLike
 from anndata import AnnData
 from flowio import FlowData
 from flowio.exceptions import FCSParsingError
-import warnings
+from pandas.io.parsers.readers import TextFileReader
 
 from typing import Union, Optional, Literal
 
 from .._utils._utils import (_all_batches_have_reference,
                              _conclusive_reference_values)
 
-from ._fcs_file import FCSFile
 from ._dataprovider import (DataProviderFCS,
                             DataProviderAnnData,
                             DataProvider)
-from ._datareader import (DataReaderFCS)
 from .._transformation._transformations import Transformer
 
 from abc import abstractmethod
@@ -476,7 +476,16 @@ class DataHandlerFCS(DataHandler):
 
     def _read_metadata(self,
                        path: PathLike) -> pd.DataFrame:
-        return pd.read_csv(path, index_col = False)
+        delimiter = self._fetch_delimiter(path)
+        return pd.read_csv(path, sep = delimiter, index_col = False)
+
+    def _fetch_delimiter(self,
+                         path: PathLike) -> str:
+        reader: TextFileReader = pd.read_csv(path,
+                                             sep = None,
+                                             iterator = True,
+                                             engine = "python")
+        return reader._engine.data.dialect.delimiter
 
     def write(self,
               file_name: str,
