@@ -1,5 +1,12 @@
 # CytoNormPy
 
+[![Tests][badge-tests]][link-tests]
+[![Documentation][badge-docs]][link-docs]
+
+[badge-tests]: https://img.shields.io/github/actions/workflow/status/TarikExner/CytoNormPy/pytest.yml?branch=main
+[link-tests]: https://github.com/TarikExner/CytoNormPy/actions/workflows/pytest.yml
+[badge-docs]: https://img.shields.io/readthedocs/cytonormpy
+
 A python port for the CytoNorm R library.
 
 # Installation
