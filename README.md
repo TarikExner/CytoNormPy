@@ -35,9 +35,7 @@ Alternatively, clone the repository to your local hard drive via
 
     git clone https://github.com/TarikExner/CytoNormPy.git && cd CytoNormpy
     git checkout --track origin/main
-    pip install .
-
-Note that while cytonormpy is in beta phase, you need to have access to the private repo.
+    pip install .[docs, test]
 
 ## Jupyter notebooks
 
@@ -49,13 +47,19 @@ and run the notebook by entering `jupyter-notebook` into the terminal.
 
 ## Getting Started
 
-Code examples are found under "vignettes" and currently include:
-- CytoNormPy from FCS files
-- CytoNormPy from AnnData objects
-- CytoNormPy plotting
+Please refer to the [documentation][link-docs]. Examples are found under "vignettes" and currently include:
+- [CytoNormPy from FCS files][link-docs-fcs-vignette]
+- [CytoNormPy from AnnData objects][link-docs-anndata-vignette]
+- [CytoNormPy plotting][link-docs-plotting-vignette]
 
 ## Contributing
 
 Your contributions are welcome!
 
 Please submit an issue or pull request via Github! Pull requests with updated documentation and accompanying unit tests are preferred but not obligate!
+
+
+[link-docs]: https://cytonormpy.readthedocs.io
+[link-docs-fcs-vignette]: https://cytonormpy.readthedocs.io/en/latest/vignettes/cnp_fcs_file.html
+[link-docs-anndata-vignette]: https://cytonormpy.readthedocs.io/en/latest/vignettes/cnp_anndata.html
+[link-docs-plotting-vignette]: https://cytonormpy.readthedocs.io/en/latest/vignettes/cnp_plotting.html
