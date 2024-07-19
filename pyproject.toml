@@ -11,6 +11,8 @@ authors = [
 description = "CytoNorm for python"
 readme = "README.md"
 requires-python = ">=3.7"
+repository = "http://github.com/TarikExner/CytoNormPy/"
+keywords = ["batch", "cytometry", "cytonorm"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -23,22 +25,30 @@ dependencies = [
     "pandas",
     "flowio",
     "flowutils",
-    "flowsom@git+https://github.com/TarikExner/FlowSOM_Python.git@pip_issue",
+    "flowsom@git+https://github.com/saeyslab/FlowSOM_Python"
+]
 
-    ##
-    "sphinx>=4",
+[project.optional-dependencies]
+docs = [
+    "sphinx<=7.4",
     "sphinx-book-theme>=1.0.0",
     "sphinxcontrib-bibtex>=1.0.0",
     "sphinx-autodoc-typehints",
     "nbsphinx",
     "nbsphinx-link",
     "pandoc",
-    "myst_parser"
+    "myst_parser",
+    "docutils<=0.20",
+    "ipython"
+]
+test = [
+    "pytest",
+    "pytest-cov"
 ]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
-#[project.urls]
-#"Homepage" = "http://www.google.de/"
-#"Bug Tracker" = "https://github.com/"
+[project.urls]
+"Homepage" = "http://github.com/TarikExner/CytoNormPy/"
+"Bugtracker" = "http://github.com/TarikExner/CytoNormPy/"
