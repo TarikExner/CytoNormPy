@@ -2,6 +2,7 @@
 
 [![Tests][badge-tests]][link-tests]
 [![Documentation][badge-docs]][link-docs]
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/TarikExner/CytoNormPy/pytest.yml?branch=main
 [link-tests]: https://github.com/TarikExner/CytoNormPy/actions/workflows/pytest.yml
