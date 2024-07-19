@@ -150,8 +150,8 @@ class Plotter:
 
             plot_kwargs = {
                 "data": df,
-                "x": "original",
-                "y": "normalized",
+                "x": "normalized",
+                "y": "original",
                 "hue": colorby,
                 "ax": ax
             }
@@ -303,8 +303,8 @@ class Plotter:
 
             plot_kwargs = {
                 "data": df,
-                "x": "original",
-                "y": "normalized",
+                "x": "normalized",
+                "y": "original",
                 "hue": colorby,
                 "ax": ax
             }
@@ -933,8 +933,8 @@ class Plotter:
         
         hue = None if colorby == grid_by else colorby
         plot_params = {
-            "x": "original",
-            "y": "normalized",
+            "x": "normalized",
+            "y": "original",
             "hue": hue
         }
 
