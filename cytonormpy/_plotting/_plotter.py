@@ -443,6 +443,7 @@ class Plotter:
             # calculate it to remove empty axes later
             total_plots = n_cols * n_rows
 
+            ax: NDArrayOfAxes
             fig, ax = plt.subplots(
                 ncols = n_cols,
                 nrows = n_rows,
@@ -450,7 +451,6 @@ class Plotter:
                 sharex = False,
                 sharey = False
             )
-            ax: NDArrayOfAxes
             ax = ax.flatten()
             i = 0
 
@@ -475,7 +475,7 @@ class Plotter:
                                   ylim = ylim,
                                   linthresh = linthresh)
                 legend = ax[i].legend_
-                handles = legend.legendHandles
+                handles = legend.legend_handles
                 labels = [t.get_text() for t in legend.get_texts()]
 
                 ax[i].legend_.remove()
