@@ -10,7 +10,7 @@ authors = [
 ]
 description = "CytoNorm for python"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 repository = "http://github.com/TarikExner/CytoNormPy/"
 keywords = ["batch", "cytometry", "cytonorm"]
 classifiers = [
