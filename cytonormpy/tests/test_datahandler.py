@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 from pathlib import Path
 import numpy as np
 from anndata import AnnData
@@ -389,4 +390,46 @@ def test_add_file_anndata(datahandleranndata: DataHandlerAnnData):
     assert "my_new_file" in dh._metadata["file_name"].tolist()
     assert dh._metadata.loc[dh._metadata["file_name"] == file_name, "batch"].iloc[0] == batch
     assert dh._metadata.equals(dh._provider._metadata)
+
+def test_string_index_fcs(metadata: pd.DataFrame,
+                          INPUT_DIR: Path,
+                          DATAHANDLER_DEFAULT_KWARGS):
+    DATAHANDLER_DEFAULT_KWARGS.pop("layer")
+    metadata = metadata.copy()
+    metadata["batch"] = [f"batch_{entry}" for entry in metadata["batch"].tolist()]
+    dh = DataHandlerFCS(metadata = metadata, input_directory = INPUT_DIR, **DATAHANDLER_DEFAULT_KWARGS)
+    new_metadata = dh._metadata
+    assert "original_batch" in new_metadata.columns, metadata.dtypes
+    assert is_numeric_dtype(new_metadata["batch"])
+
+def test_numeric_string_index_fcs(metadata: pd.DataFrame,
+                                  INPUT_DIR: Path,
+                                  DATAHANDLER_DEFAULT_KWARGS):
+    DATAHANDLER_DEFAULT_KWARGS.pop("layer")
+    metadata = metadata.copy()
+    metadata["batch"] = [str(entry) for entry in metadata["batch"].tolist()]
+    dh = DataHandlerFCS(metadata = metadata, input_directory = INPUT_DIR, **DATAHANDLER_DEFAULT_KWARGS)
+    new_metadata = dh._metadata
+    assert "original_batch" not in new_metadata.columns
+    assert is_numeric_dtype(new_metadata["batch"])
+
+def test_string_index_anndata(data_anndata: AnnData,
+                              DATAHANDLER_DEFAULT_KWARGS):
+    adata = data_anndata
+    adata.obs["batch"] = [f"batch_{entry}" for entry in adata.obs["batch"].tolist()]
+    dh = DataHandlerAnnData(adata, **DATAHANDLER_DEFAULT_KWARGS)
+    new_metadata = dh._metadata
+    assert "original_batch" in new_metadata.columns
+    assert is_numeric_dtype(new_metadata["batch"])
+
+def test_numeric_string_index_anndata(data_anndata: AnnData,
+                                      DATAHANDLER_DEFAULT_KWARGS):
+    adata = data_anndata
+    adata.obs["batch"] = [str(entry) for entry in adata.obs["batch"].tolist()]
+    dh = DataHandlerAnnData(adata, **DATAHANDLER_DEFAULT_KWARGS)
+    new_metadata = dh._metadata
+    assert "original_batch" not in new_metadata.columns
+    assert is_numeric_dtype(new_metadata["batch"])
+
+
 
