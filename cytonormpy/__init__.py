@@ -53,3 +53,5 @@ __all__ = [
     "emd_from_anndata",
     "emd_comparison_from_anndata"
 ]
+
+__version__ = '0.0.3'
