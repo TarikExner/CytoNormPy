@@ -49,6 +49,8 @@ def _select_interpolants_numba(x: np.ndarray,
                 tauS = 3 * Sk / np.sqrt(alpha**2 + beta**2)
                 m[k] = tauS * alpha
                 m[k1] = tauS * beta
+    assert m.shape[0] == x.shape[0]
+    assert m.shape[0] == y.shape[0]
     return m
 
 @njit(float64(float64[:]))
@@ -221,8 +223,8 @@ def _regularize(x: np.ndarray,
         x = x[idxs]
         y = y[idxs]
 
-        assert x.shape[0] == y.shape[0]
-
+    
+    assert x.shape[0] == y.shape[0]
     return x, y
 
 @njit(Tuple((float64[:], float64[:]))(float64[:], float64[:]))
