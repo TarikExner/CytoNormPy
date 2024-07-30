@@ -546,14 +546,11 @@ class CytoNorm:
             for c, cluster in enumerate(self.clusters):
                 if cluster in self._not_calculated[batch]:
                     for channel in self.channels:
-                        spl = Spline(batch,
-                                     cluster,
-                                     channel,
-                                     spline_calc_function = IdentitySpline,
-                                     limits = limits)
-                        spl.fit(current_distribution = None,
-                                goal_distribution = None)
-                        splines.add_spline(spl)
+                        self._add_identity_spline(splines = splines,
+                                                  batch = batch,
+                                                  cluster = cluster,
+                                                  channel = channel,
+                                                  limits = limits)
                 else:
                     for ch, channel in enumerate(self.channels):
                         q = expr_quantiles.get_quantiles(channel_idx = ch,
@@ -564,16 +561,44 @@ class CytoNorm:
                                                        quantile_idx = None,
                                                        cluster_idx = c,
                                                        batch_idx = None)
-                        spl = Spline(batch = batch,
-                                     cluster = cluster,
-                                     channel = channel,
-                                     limits = limits)
-                        spl.fit(q, g)
-                        splines.add_spline(spl)
+                        if np.unique(q).shape[0] == 1 or np.unique(g).shape[0] == 1:
+                            # if there is only one unique value, the Fritsch-Carlson
+                            # algorithm will fail. In that case, we use the Identity
+                            # function
+                            self._add_identity_spline(splines = splines,
+                                                      batch = batch,
+                                                      cluster = cluster,
+                                                      channel = channel,
+                                                      limits = limits)
+                        else:
+                            spl = Spline(batch = batch,
+                                         cluster = cluster,
+                                         channel = channel,
+                                         limits = limits)
+                            spl.fit(q, g)
+                            splines.add_spline(spl)
 
         self.splinefuncs = splines
 
         return
+
+    def _add_identity_spline(self,
+                             splines: Splines,
+                             batch: int,
+                             cluster: int,
+                             channel: str,
+                             limits: Optional[Union[list[float], np.ndarray]]):
+        spl = Spline(batch,
+                     cluster,
+                     channel,
+                     spline_calc_function = IdentitySpline,
+                     limits = limits)
+        spl.fit(current_distribution = None,
+                goal_distribution = None)
+        splines.add_spline(spl)
+
+        return
+
 
     def _normalize_file(self,
                         df: pd.DataFrame,

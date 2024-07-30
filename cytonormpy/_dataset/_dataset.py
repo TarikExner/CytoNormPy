@@ -8,6 +8,7 @@ from anndata import AnnData
 from flowio import FlowData
 from flowio.exceptions import FCSParsingError
 from pandas.io.parsers.readers import TextFileReader
+from pandas.api.types import is_numeric_dtype
 
 from typing import Union, Optional, Literal
 
@@ -41,29 +42,14 @@ class DataHandler:
 
     def __init__(self,
                  channels: Union[list[str], str, Literal["all", "markers"]],
-                 provider: DataProvider,
-                 reference_column: str,
-                 reference_value: str,
-                 batch_column: str,
-                 sample_identifier_column: str,
-                 metadata: pd.DataFrame):
+                 provider: DataProvider):
 
-        self._init_metadata_columns(
-            reference_column = reference_column,
-            reference_value = reference_value,
-            batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column
-        )
-
-        self._validate_metadata_table(metadata)
-        self._validate_batch_references(metadata)
 
         self._validation_value = list(set([
-            val for val in metadata[self._reference_column]
+            val for val in self._metadata[self._reference_column]
             if val != self._reference_value
         ]))[0]
 
-        self._metadata = metadata
 
         self.ref_file_names = self._get_reference_file_names()
         self.validation_file_names = self._get_validation_file_names()
@@ -78,6 +64,30 @@ class DataHandler:
         self.channels: list[str] = self._select_channels(_channel_user_input)
 
         self._channel_indices = self._find_channel_indices()
+
+    def _validate_metadata(self,
+                           metadata: pd.DataFrame) -> None:
+        self._metadata = metadata
+        self._validate_metadata_table(self._metadata)
+        self._validate_batch_references(self._metadata)
+        self._convert_batch_dtype()
+
+    def _convert_batch_dtype(self) -> None:
+        """
+        If the batch is entered as a string, we convert them
+        to integers in order to comply with the numpy sorts
+        later on.
+        """
+        if not is_numeric_dtype(self._metadata[self._batch_column]):
+            try:
+                self._metadata[self._batch_column] = \
+                    self._metadata[self._batch_column].astype(np.int8)
+            except ValueError:
+                self._metadata[f"original_{self._batch_column}"] = \
+                    self._metadata[self._batch_column]
+                mapping = {entry: i for i, entry in enumerate(self._metadata[self._batch_column].unique())}
+                self._metadata[self._batch_column] = \
+                    self._metadata[self._batch_column].map(mapping)
 
     @abstractmethod
     def write(self,
@@ -423,10 +433,19 @@ class DataHandlerFCS(DataHandler):
         self._output_dir = output_directory or input_directory
         self._prefix = prefix
 
+        self._init_metadata_columns(
+            reference_column = reference_column,
+            reference_value = reference_value,
+            batch_column = batch_column,
+            sample_identifier_column = sample_identifier_column
+        )
+
         if isinstance(metadata, pd.DataFrame):
             _metadata = metadata
         else:
             _metadata = self._read_metadata(metadata)
+
+        self._validate_metadata(_metadata)
 
 
         _provider = self._create_data_provider(
@@ -444,11 +463,6 @@ class DataHandlerFCS(DataHandler):
         super().__init__(
             channels = channels,
             provider = _provider,
-            reference_column = reference_column,
-            reference_value = reference_value,
-            batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column,
-            metadata = _metadata
         )
 
         self._provider.channels = self.channels
@@ -613,12 +627,21 @@ class DataHandlerAnnData(DataHandler):
             self.adata.layers[self._key_added] = \
                 np.array(self.adata.layers[self._layer])
 
+        self._init_metadata_columns(
+            reference_column = reference_column,
+            reference_value = reference_value,
+            batch_column = batch_column,
+            sample_identifier_column = sample_identifier_column
+        )
+
         _metadata = self._condense_metadata(
             self.adata.obs,
             reference_column,
             batch_column,
             sample_identifier_column
         )
+
+        self._validate_metadata(_metadata)
 
         _provider = self._create_data_provider(
             adata = adata,
@@ -634,11 +657,6 @@ class DataHandlerAnnData(DataHandler):
         super().__init__(
             channels = channels,
             provider = _provider,
-            reference_column = reference_column,
-            reference_value = reference_value,
-            batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column,
-            metadata = _metadata
         )
 
         self._provider.channels = self.channels

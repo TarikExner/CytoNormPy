@@ -596,3 +596,37 @@ def test_normalizing_files_that_have_been_added_later_valueerror():
         cn.normalize_data(file_names = "Gates_PTLG034_Unstim_Control_2_dup.fcs",
                           batches = [3, 4])
 
+
+def test_all_zero_quantiles_are_converted_to_IDSpline(metadata: pd.DataFrame,
+                                                      INPUT_DIR,
+                                                      tmp_path: Path):
+    cn = cnp.CytoNorm()
+    t = AsinhTransformer()
+    fs = FlowSOM(n_clusters = 30) # way too many clusters, but we want that.
+    cn.add_clusterer(fs)
+    cn.add_transformer(t)
+    coding_detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header = None)[0].tolist()
+    cn.run_fcs_data_setup(metadata = metadata,
+                          input_directory = INPUT_DIR,
+                          channels = coding_detectors,
+                          output_directory = tmp_path)
+    cn.run_clustering(cluster_cv_threshold = 2)
+    cn.calculate_quantiles()
+    # we make sure that we actually have all-zero quantiles
+    mask = np.all(cn._expr_quantiles._expr_quantiles == 0, axis = (0))
+    assert np.any(mask)
+    # this should now run without error
+    cn.calculate_splines()
+    
+    # we now check that all-zero quantiles have been converted
+    # to identity splines
+    for channel_idx, cluster_idx, batch_idx in np.argwhere(mask):
+        channel = cn.channels[channel_idx]
+        cluster = cn.clusters[cluster_idx]
+        batch = cn.batches[batch_idx]
+        spline = cn.splinefuncs.get_spline(batch, cluster, channel)
+        
+        assert spline.spline_calc_function.__qualname__ == "IdentitySpline"
+
+    
+
