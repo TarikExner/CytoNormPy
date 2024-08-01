@@ -136,7 +136,7 @@ def emd_comparison_from_fcs(input_directory: PathLike,
                             truncate_max_range: bool = False,
                             transformer: Optional[Transformer] = None) -> pd.DataFrame:
     """
-    This function is a wrapper around `mad_from_fcs` that directly combines the
+    This function is a wrapper around `emd_from_fcs` that directly combines the
     normalized and unnormalized dataframes. Currently only works if the
     normalized and unnormalized files are in the same directory.
 
@@ -197,7 +197,7 @@ def emd_from_fcs(input_directory: PathLike,
                  origin: Optional[str] = None,
                  transformer: Optional[Transformer] = None) -> pd.DataFrame:
     """\
-    Function to evaluate the MAD on a given list of FCS-files.
+    Function to evaluate the EMD on a given list of FCS-files.
 
     Parameters
     ----------
