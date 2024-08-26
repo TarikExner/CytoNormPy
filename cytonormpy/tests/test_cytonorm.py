@@ -94,6 +94,59 @@ def test_run_clustering_above_cv(metadata: pd.DataFrame,
         cn.run_clustering(cluster_cv_threshold = 0)
     assert "clusters" in cn._datahandler.ref_data_df.index.names
 
+def test_for_normalized_files_anndata(data_anndata):
+    """since v.0.0.4, all files are normalized, including the ref files. We test for this"""
+    adata = data_anndata
+    cn = CytoNorm()
+    cn.run_anndata_setup(adata = adata)
+    cn.calculate_quantiles()
+    cn.calculate_splines()
+
+    # First, we only normalize the validation samples...
+    val_file_names = adata.obs[adata.obs["reference"] == "other"]["file_name"].unique().tolist()
+    batches = [adata.obs.loc[adata.obs["file_name"] == file,"batch"].unique().tolist()[0] for file in val_file_names]
+    cn.normalize_data(file_names = val_file_names, batches = batches)
+    assert "cyto_normalized" in adata.layers.keys()
+    
+    # The reference files should therefore be the same as in the original
+    assert np.array_equal(
+        adata[adata.obs["reference"] == "ref"].to_df(layer = "compensated").to_numpy(),
+        adata[adata.obs["reference"] == "ref"].to_df(layer = "cyto_normalized").to_numpy()
+    )
+
+    # Second, we normalize all samples...
+    val_file_names = adata.obs[adata.obs["reference"] == "other"]["file_name"].unique().tolist()
+    cn.normalize_data()
+    assert "cyto_normalized" in adata.layers.keys()
+    
+    # The reference files should therefore be different as in the original
+    assert not np.array_equal(
+        adata[adata.obs["reference"] == "ref"].to_df(layer = "compensated").to_numpy(),
+        adata[adata.obs["reference"] == "ref"].to_df(layer = "cyto_normalized").to_numpy()
+    )
+
+
+def test_for_normalized_files_fcs(metadata: pd.DataFrame,
+                                  INPUT_DIR: Path,
+                                  tmp_path: Path):
+    """since v.0.0.4, all files are normalized, including the ref files. We test for this"""
+    cn = cnp.CytoNorm()
+    t = cnp.AsinhTransformer()
+    cn.add_transformer(t)
+    cn.run_fcs_data_setup(input_directory = INPUT_DIR,
+                          metadata = metadata,
+                          channels = "markers",
+                          output_directory = tmp_path)
+    cn.calculate_quantiles()
+    cn.calculate_splines(limits = [0,8])
+    cn.normalize_data()
+
+    all_file_names = cn._datahandler.all_file_names
+    assert isinstance(cn._datahandler, DataHandlerFCS)
+    norm_file_names = [f"{cn._datahandler._prefix}_{file}" for file in all_file_names]
+    assert all((tmp_path / file).exists() for file in norm_file_names)
+
+
 def test_fancy_numpy_indexing_without_clustering(metadata: pd.DataFrame,
                                                  INPUT_DIR: Path):
     cn = cnp.CytoNorm()

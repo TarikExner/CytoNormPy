@@ -690,7 +690,7 @@ class CytoNorm:
             object has been modified. If left `None`, the original
             anndata will be used.
         file_names:
-            Optional. If left `None`, the validation files from the
+            Optional. If left `None`, all files from the
             cytonorm object will be used.
         batches
             Optional. Specifies the batches of `file_names`.
@@ -708,7 +708,7 @@ class CytoNorm:
             self._datahandler._provider._adata = adata
 
         if file_names is None:
-            file_names = self._datahandler.validation_file_names
+            file_names = self._datahandler.all_file_names
         else:
             assert batches is not None
             if not isinstance(file_names, list):
