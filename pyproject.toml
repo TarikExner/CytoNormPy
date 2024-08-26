@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cytonormpy"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="Tarik Exner", email="Tarik.Exner@med.uni-heidelberg.de" },
 ]
@@ -19,6 +19,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "pytometry",
+    "pandas>=2.0.0",
     "anndata",
     "numpy",
     "scipy",
