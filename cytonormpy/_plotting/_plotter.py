@@ -842,9 +842,20 @@ class Plotter:
             return_fig = return_fig
         )
 
+    def _unify_axes_dimensions(self,
+                               ax: Axes) -> None:
+
+        axes_min = min(ax.get_xlim()[0], ax.get_ylim()[0])
+        axes_max = max(ax.get_xlim()[1], ax.get_ylim()[1])
+        axis_lims = (axes_min, axes_max)
+        ax.set_xlim(axis_lims)
+        ax.set_ylim(axis_lims)
+    
     def _draw_comp_line(self,
                         ax: Axes) -> None:
-        ax.set_ylim(ax.get_xlim())
+
+        self._unify_axes_dimensions(ax)
+
         comp_line_x = list(ax.get_xlim())
         comp_line_y = comp_line_x
         ax.plot(comp_line_x, comp_line_y, color = "red", linestyle = "--")
@@ -855,7 +866,9 @@ class Plotter:
     def _draw_cutoff_line(self,
                           ax: Axes,
                           cutoff: float) -> None:
-        ax.set_ylim(ax.get_xlim())
+
+        self._unify_axes_dimensions(ax)
+
         upper_bound_x = list(ax.get_xlim())
         upper_bound_y = [val + cutoff for val in upper_bound_x]
         lower_bound_x = list(ax.get_ylim())
