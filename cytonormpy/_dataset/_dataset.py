@@ -44,12 +44,13 @@ class DataHandler:
                  channels: Union[list[str], str, Literal["all", "markers"]],
                  provider: DataProvider):
 
-
-        self._validation_value = list(set([
-            val for val in self._metadata[self._reference_column]
-            if val != self._reference_value
-        ]))[0]
-
+        try:
+            self._validation_value = list(set([
+                val for val in self._metadata[self._reference_column]
+                if val != self._reference_value
+            ]))[0]
+        except IndexError: # means we only have reference values
+            self._validation_value = None
 
         self.ref_file_names = self._get_reference_file_names()
         self.validation_file_names = self._get_validation_file_names()
