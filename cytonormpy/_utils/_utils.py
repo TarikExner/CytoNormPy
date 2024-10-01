@@ -300,7 +300,7 @@ def _all_batches_have_reference(df: pd.DataFrame,
     """
     _df: pd.DataFrame = pd.DataFrame(df[[reference, batch]].drop_duplicates())
 
-    if len(_df[reference].unique()) != 2:
+    if len(_df[reference].unique()) > 2:
         raise ValueError(
             "Please make sure that there are only two values in "
             "the reference column. Have found "

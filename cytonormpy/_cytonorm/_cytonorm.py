@@ -721,7 +721,10 @@ class CytoNorm:
                 self._datahandler._add_file(file_name, batch)
 
         with cf.ThreadPoolExecutor(max_workers = n_jobs) as p:
-            p.map(self._run_normalization, [file for file in file_names])
+            # don't remove this syntax where we loop through
+            # the results. We need this to catch exceptions by TPE.map()
+            for _ in p.map(self._run_normalization, [file for file in file_names]):
+                pass
 
     def _run_spline_funcs(self,
                           data: np.ndarray,
@@ -764,7 +767,8 @@ class CytoNorm:
 
     def calculate_mad(self,
                       groupby: Optional[Union[list[str], str]] = None,
-                      cell_labels: Optional[Union[str, dict]] = None):
+                      cell_labels: Optional[Union[str, dict]] = None,
+                      files: Literal["validation", "all"] = "validation") -> None:
         """\
         Calculates the MAD on the normalized and unnormalized samples.
 
@@ -778,6 +782,9 @@ class CytoNorm:
             pass a dictionary of shape {file_name: [label1, label2,..., labeln]}.
             Labels will be annotated to the data and can be used in
             `groupby`.
+        files:
+            Can be any of 'validation' or 'all'. Specifies for which
+            file set the EMD values are calculated on. Defaults to 'all'.
 
         Returns
         -------
@@ -794,6 +801,14 @@ class CytoNorm:
             "transformer": self._datahandler._provider._transformer,
             "cell_labels": cell_labels
         }
+
+        if files == "validation":
+            _files = self._datahandler.validation_file_names
+        elif files == "all":
+            _files = self._datahandler.all_file_names
+        else:
+            raise ValueError(f"files has to be one of ['validation', 'all'], you entered {files}")
+
         if isinstance(self._datahandler, DataHandlerFCS):
             fcs_kwargs = {
                 "truncate_max_range": self._datahandler._provider._reader._truncate_max_range
@@ -802,7 +817,7 @@ class CytoNorm:
             if not self._datahandler._input_dir == self._datahandler._output_dir:
                 orig_frame = mad_from_fcs(
                     input_directory = self._datahandler._input_dir,
-                    files = self._datahandler.validation_file_names,
+                    files = _files,
                     origin = "original",
                     **fcs_kwargs,
                     **general_kwargs
@@ -811,7 +826,7 @@ class CytoNorm:
                     input_directory = self._datahandler._output_dir,
                     files = [
                         f"{self._datahandler._prefix}_{file}"
-                        for file in self._datahandler.validation_file_names
+                        for file in _files
                     ],
                     origin = "normalized",
                     **fcs_kwargs,
@@ -832,10 +847,10 @@ class CytoNorm:
             else:
                 self.mad_frame = mad_comparison_from_fcs(
                     input_directory = self._datahandler._input_dir,
-                    original_files = self._datahandler.validation_file_names,
+                    original_files = _files,
                     normalized_files = [
                         f"{self._datahandler._prefix}_{file}"
-                        for file in self._datahandler.validation_file_names
+                        for file in _files
                     ],
                     norm_prefix = self._datahandler._prefix,
                     **fcs_kwargs,
@@ -844,7 +859,7 @@ class CytoNorm:
         elif isinstance(self._datahandler, DataHandlerAnnData):
             self.mad_frame = mad_comparison_from_anndata(
                 adata = self._datahandler.adata,
-                file_list = self._datahandler.validation_file_names,
+                file_list = _files,
                 orig_layer = self._datahandler._layer,
                 norm_layer = self._datahandler._key_added,
                 sample_identifier_column = self._datahandler._sample_identifier_column,
@@ -852,7 +867,8 @@ class CytoNorm:
             )
 
     def calculate_emd(self,
-                      cell_labels: Optional[Union[str, dict]] = None):
+                      cell_labels: Optional[Union[str, dict]] = None,
+                      files: Literal["validation", "all"] = "validation") -> None:
         """\
         Calculates the EMD on the normalized and unnormalized samples.
 
@@ -863,6 +879,9 @@ class CytoNorm:
             the respective `.obs` column. If FCS files were used,
             pass a dictionary of shape {file_name: [label1, label2,..., labeln]}.
             Labels will be annotated to the data.
+        files:
+            Can be any of 'validation' or 'all'. Specifies for which
+            file set the EMD values are calculated on. Defaults to 'validation'.
 
         Returns
         -------
@@ -878,6 +897,14 @@ class CytoNorm:
             "transformer": self._datahandler._provider._transformer,
             "cell_labels": cell_labels,
         }
+
+        if files == "validation":
+            _files = self._datahandler.validation_file_names
+        elif files == "all":
+            _files = self._datahandler.all_file_names
+        else:
+            raise ValueError(f"files has to be one of ['validation', 'all'], you entered {files}")
+
         if isinstance(self._datahandler, DataHandlerFCS):
             fcs_kwargs = {
                 "truncate_max_range": self._datahandler._provider._reader._truncate_max_range
@@ -886,7 +913,7 @@ class CytoNorm:
             if not self._datahandler._input_dir == self._datahandler._output_dir:
                 orig_frame = emd_from_fcs(
                     input_directory = self._datahandler._input_dir,
-                    files = self._datahandler.validation_file_names,
+                    files = _files,
                     origin = "original",
                     **fcs_kwargs,
                     **general_kwargs
@@ -895,7 +922,7 @@ class CytoNorm:
                     input_directory = self._datahandler._output_dir,
                     files = [
                         f"{self._datahandler._prefix}_{file}"
-                        for file in self._datahandler.validation_file_names
+                        for file in _files
                     ],
                     origin = "normalized",
                     **fcs_kwargs,
@@ -916,10 +943,10 @@ class CytoNorm:
             else:
                 self.emd_frame = emd_comparison_from_fcs(
                     input_directory = self._datahandler._input_dir,
-                    original_files = self._datahandler.validation_file_names,
+                    original_files = _files,
                     normalized_files = [
                         f"{self._datahandler._prefix}_{file}"
-                        for file in self._datahandler.validation_file_names
+                        for file in _files
                     ],
                     norm_prefix = self._datahandler._prefix,
                     **fcs_kwargs,
@@ -928,7 +955,7 @@ class CytoNorm:
         elif isinstance(self._datahandler, DataHandlerAnnData):
             self.emd_frame = emd_comparison_from_anndata(
                 adata = self._datahandler.adata,
-                file_list = self._datahandler.validation_file_names,
+                file_list = _files,
                 orig_layer = self._datahandler._layer,
                 norm_layer = self._datahandler._key_added,
                 sample_identifier_column = self._datahandler._sample_identifier_column,
