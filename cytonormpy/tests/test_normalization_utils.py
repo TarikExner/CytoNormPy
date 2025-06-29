@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from cytonormpy._utils._utils import (_all_batches_have_reference)
-from cytonormpy._normalization._utils import numba_quantiles  # Replace with the actual import path
+from cytonormpy._normalization._utils import numba_quantiles
 
 
 def test_all_batches_have_reference():
@@ -77,13 +77,21 @@ def test_all_batches_have_reference_batch_wrong_control_value():
                                            "batch",
                                            ref_control_value = "ref")
 
-
-
 @pytest.mark.parametrize("data, q, expected_shape", [
     # Normal use-cases for 1D arrays
     (np.array([3.0, 1.0, 4.0, 1.5, 2.0], dtype=np.float64), np.array([0.25, 0.5, 0.75], dtype=np.float64), (3,)),
     (np.linspace(0, 100, 1000, dtype=np.float64), np.array([0.1, 0.5, 0.9], dtype=np.float64), (3,)),
     (np.random.rand(100), np.array([0.1, 0.5, 0.9], dtype=np.float64), (3,)),
+
+    # Normal use-cases for 1D arrays with dtype float32
+    (np.array([3.0, 1.0, 4.0, 1.5, 2.0], dtype=np.float32), np.array([0.25, 0.5, 0.75], dtype=np.float32), (3,)),
+    (np.linspace(0, 100, 1000, dtype=np.float32), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3,)),
+    (np.random.rand(100), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3,)),
+
+    # Normal use-cases for 1D arrays with mixed dtypes
+    (np.array([3.0, 1.0, 4.0, 1.5, 2.0], dtype=np.float64), np.array([0.25, 0.5, 0.75], dtype=np.float32), (3,)),
+    (np.linspace(0, 100, 1000, dtype=np.float64), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3,)),
+    (np.random.rand(100).astype(np.float32), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3,)),
     
     # Edge cases for 1D arrays
     (np.array([1.0], dtype=np.float64), np.array([0.5], dtype=np.float64), (1,)),
@@ -96,14 +104,14 @@ def test_all_batches_have_reference_batch_wrong_control_value():
 def test_numba_quantiles_1d(data, q, expected_shape):
     # Convert data to 2D for np.quantile to keep comparison consistent
     data_2d = data[:, None]
-    expected = np.quantile(data_2d, q, axis=0).flatten()  # np.quantile result for 1D should be flattened
+    expected = np.quantile(data_2d.astype(data.dtype), q, axis=0).flatten()  # np.quantile result for 1D should be flattened
     result = numba_quantiles(data, q)
     
     # Check if shapes match
     assert result.shape == expected_shape
     
     # Check if values match
-    assert np.array_equal(result, expected)
+    assert np.allclose(result, expected), f"Mismatch: {result} vs {expected}"
 
 def test_invalid_quantiles_1d():
     # Test invalid quantiles with 1D arrays
@@ -118,6 +126,16 @@ def test_invalid_quantiles_1d():
     (np.random.rand(10, 5), np.array([0.1, 0.5, 0.9], dtype=np.float64), (3, 5)),
     (np.linspace(0, 100, 1000).reshape(200, 5), np.array([0.1, 0.5, 0.9], dtype=np.float64), (3, 5)),
     (np.random.rand(100, 3), np.array([0.1, 0.5, 0.9], dtype=np.float64), (3, 3)),
+
+    #Normal use-cases for 2D arrays with mixed dtype (rand default is float64)
+    (np.random.rand(10, 5), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3, 5)),
+    (np.linspace(0, 100, 1000).reshape(200, 5), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3, 5)),
+    (np.random.rand(100, 3), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3, 3)),
+    
+    # Normal use-cases for 2D arrays in np.float32
+    (np.random.rand(10, 5).astype(np.float32), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3, 5)),
+    (np.linspace(0, 100, 1000).reshape(200, 5).astype(np.float32), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3, 5)),
+    (np.random.rand(100, 3).astype(np.float32), np.array([0.1, 0.5, 0.9], dtype=np.float32), (3, 3)),
     
     # Edge cases for 2D arrays where second dimension is 1
     (np.random.rand(15, 1), np.array([0.1, 0.5, 0.9], dtype=np.float64), (3, 1)),
@@ -139,7 +157,7 @@ def test_numba_quantiles_2d(data, q, expected_shape):
     assert result.shape == expected_shape, f"Shape mismatch: {result.shape} vs {expected_shape}"
     
     # Check if values match
-    assert np.allclose(result, expected, rtol=1e-6, atol=1e-8), f"Mismatch: {result} vs {expected}"
+    assert np.allclose(result, expected), f"Mismatch: {result} vs {expected}"
 
 def test_invalid_array_shape_2d():
     with pytest.raises(ValueError):

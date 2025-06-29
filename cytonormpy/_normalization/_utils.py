@@ -1,21 +1,31 @@
 import numpy as np
-from numba import njit, float64
+from numba import njit, float64, float32
 
-@njit(float64[:, :](float64[:, :], float64[:]), cache=True)
-def numba_quantiles_2d(a, q):
+njit(
+    [
+        float32[:, :](float32[:, :], float32[:]),
+        float64[:, :](float64[:, :], float64[:])
+    ],
+    cache=True
+)
+def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     """
     Compute quantiles for a 2D numpy array along axis 0.
     
-    Parameters:
-    a : numpy.ndarray
-        Input 2D array of type np.float64.
-    q : numpy.ndarray
-        Quantiles to compute, should be in the range [0, 1].
+    Parameters
+    ----------
+    a
+        numpy array holding the expression data
+    q
+        numpy array holding the quantiles to compute,
+        must be in the range [0, 1]
 
-    Returns:
+    Returns
+    -------
     numpy.ndarray
         Computed quantiles for the input array along axis 0.
         Output shape is (len(q), a.shape[1]).
+
     """
     if np.any(q < 0) or np.any(q > 1):
         raise ValueError("Quantiles should be in the range [0, 1].")
@@ -41,20 +51,30 @@ def numba_quantiles_2d(a, q):
     
     return quantiles
 
-@njit(float64[:](float64[:], float64[:]), cache=True)
-def numba_quantiles_1d(a, q):
-    """
+njit(
+    [
+        float32[:](float32[:], float32[:]),
+        float64[:](float64[:], float64[:])
+    ],
+    cache=True
+)
+def numba_quantiles_1d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """\
     Compute quantiles for a 1D numpy array.
     
-    Parameters:
-    a : numpy.ndarray
-        Input 1D array of type np.float64.
-    q : numpy.ndarray
-        Quantiles to compute, should be in the range [0, 1].
+    Parameters
+    ----------
+    a
+        numpy array holding the expression data
+    q
+        numpy array holding the quantiles to compute,
+        must be in the range [0, 1]
 
-    Returns:
+    Returns
+    -------
     numpy.ndarray
         Computed quantiles for the input array.
+
     """
 
     if np.any(q < 0) or np.any(q > 1):
@@ -62,7 +82,7 @@ def numba_quantiles_1d(a, q):
 
     sorted_a = np.sort(a)
     n = len(sorted_a)
-    quantiles = np.empty(len(q), dtype=np.float64)
+    quantiles = np.empty(len(q), dtype=a.dtype)
     
     for i in range(len(q)):
         position = q[i] * (n - 1)
@@ -78,22 +98,27 @@ def numba_quantiles_1d(a, q):
     
     return quantiles
 
-def numba_quantiles(a, q):
+def numba_quantiles(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     """
     Compute quantiles for a 1D or 2D numpy array along axis 0.
     
-    Parameters:
-    a : numpy.ndarray
-        Input 1D or 2D array of type np.float64.
-    q : numpy.ndarray
-        Quantiles to compute, should be in the range [0, 1].
+    Parameters
+    ----------
+    a
+        numpy array holding the expression data
+    q
+        numpy array holding the quantiles to compute,
+        must be in the range [0, 1]
 
-    Returns:
+    Returns
+    -------
     numpy.ndarray
         Computed quantiles for the input array.
         - If input is 1D, returns 1D array of shape (len(q),).
         - If input is 2D, returns 2D array of shape (len(q), a.shape[1]).
     """
+    # ensures that q has always the same dtype as a
+    q = q.astype(a.dtype)
     if a.ndim == 1:
         return numba_quantiles_1d(a, q)
     elif a.ndim == 2:
