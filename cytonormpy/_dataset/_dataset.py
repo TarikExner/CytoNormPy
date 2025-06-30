@@ -10,14 +10,14 @@ from flowio.exceptions import FCSParsingError
 from pandas.io.parsers.readers import TextFileReader
 from pandas.api.types import is_numeric_dtype
 
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, cast
 
 from .._utils._utils import (_all_batches_have_reference,
                              _conclusive_reference_values)
 
 from ._dataprovider import (DataProviderFCS,
-                            DataProviderAnnData,
-                            DataProvider)
+                            DataProviderAnnData)
+
 from .._transformation._transformations import Transformer
 
 from abc import abstractmethod
@@ -42,7 +42,7 @@ class DataHandler:
 
     def __init__(self,
                  channels: Union[list[str], str, Literal["all", "markers"]],
-                 provider: DataProvider):
+                 provider: Union[DataProviderAnnData, DataProviderFCS]):
 
         try:
             self._validation_value = list(set([
@@ -247,7 +247,8 @@ class DataHandler:
         )
 
     def get_ref_data_df_subsampled(self,
-                                   n: int):
+                                   n: int,
+                                   markers: Optional[Union[list[str], str]] = None):
         """
         Returns the reference data frame, subsampled to
         `n` events.
@@ -261,15 +262,18 @@ class DataHandler:
         -------
         A :class:`pandas.DataFrame` containing the expression data.
         """
-        assert isinstance(self.ref_data_df, pd.DataFrame)
-        return self._subsample_df(self.ref_data_df, n)
+        return self._subsample_df(
+            self.get_ref_data_df(markers),
+            n
+        )
 
     def _subsample_df(self,
                       df: pd.DataFrame,
                       n: int):
         return df.sample(n = n, axis = 0, random_state = 187)
 
-    def get_ref_data_df(self) -> pd.DataFrame:
+    def get_ref_data_df(self,
+                        markers: Optional[Union[list[str], str]] = None) -> pd.DataFrame:
         """
         Returns the reference data frame.
 
@@ -277,7 +281,17 @@ class DataHandler:
         -------
         A :class:`pandas.DataFrame` containing the expression data.
         """
-        assert isinstance(self.ref_data_df, pd.DataFrame)
+        # cytonorm 2.0: select channels you want for clustering
+        if markers is None:
+            markers = []
+        if not isinstance(markers, list):
+            # weird edge case if someone passes only one marker
+            markers = [markers]
+
+        # safety measure: we use the _select channel function
+        markers = self._select_channels(markers)
+        if markers:
+            return cast(pd.DataFrame, self.ref_data_df[markers])
         return self.ref_data_df
 
     def _select_channels(self,

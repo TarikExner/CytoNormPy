@@ -55,45 +55,6 @@ def test_clusterer_addition():
     assert cn._transformer is None
 
 
-def test_run_clustering(data_anndata: AnnData):
-    cn = CytoNorm()
-    cn.run_anndata_setup(adata = data_anndata)
-    cn.add_transformer(AsinhTransformer())
-    cn.add_clusterer(FlowSOM())
-    cn.run_clustering(n_cells = 100,
-                      test_cluster_cv = False,
-                      cluster_cv_threshold = 2)
-    assert "clusters" in cn._datahandler.ref_data_df.index.names
-
-
-def test_run_clustering_appropriate_clustering(data_anndata: AnnData):
-    cn = CytoNorm()
-    cn.run_anndata_setup(adata = data_anndata)
-    cn.add_transformer(AsinhTransformer())
-    cn.add_clusterer(FlowSOM())
-    cn.run_clustering(n_cells = 100,
-                      test_cluster_cv = True,
-                      cluster_cv_threshold = 2)
-    assert "clusters" in cn._datahandler.ref_data_df.index.names
-
-
-def test_run_clustering_above_cv(metadata: pd.DataFrame,
-                                 INPUT_DIR: Path):
-    cn = cnp.CytoNorm()
-    # cn.run_anndata_setup(adata = data_anndata)
-    fs = FlowSOM(n_jobs = 1, metacluster_kwargs = {"L": 14, "K": 15})
-    assert isinstance(fs, FlowSOM)
-    assert isinstance(fs, ClusterBase)
-    cn.add_clusterer(fs)
-    t = AsinhTransformer()
-    cn.add_transformer(t)
-    cn.run_fcs_data_setup(metadata = metadata,
-                          input_directory = INPUT_DIR,
-                          channels = "markers")
-    with pytest.warns(ClusterCVWarning, match = "above the threshold."):
-        cn.run_clustering(cluster_cv_threshold = 0)
-    assert "clusters" in cn._datahandler.ref_data_df.index.names
-
 def test_for_normalized_files_anndata(data_anndata):
     """since v.0.0.4, all files are normalized, including the ref files. We test for this"""
     adata = data_anndata

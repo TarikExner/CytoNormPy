@@ -49,6 +49,12 @@ def detectors() -> list[str]:
         'Event_length'
     ]
 
+@pytest.fixture
+def detector_subset() -> list[str]:
+    return [
+        'Sm147Di', 'Nd148Di', 'Sm149Di', 'Sm150Di', 'Eu151Di', 'Sm152Di',
+        'Eu153Di', 'Sm154Di', 'Gd155Di', 'Gd156Di', 'Gd157Di', 'Gd158Di',
+    ]
 
 
 @pytest.fixture

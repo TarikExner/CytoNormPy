@@ -266,6 +266,7 @@ class CytoNorm:
                        n_cells: Optional[int] = None,
                        test_cluster_cv: bool = True,
                        cluster_cv_threshold = 2,
+                       markers: Optional[list[str]] = None,
                        **kwargs
                        ) -> None:
         """\
@@ -286,6 +287,8 @@ class CytoNorm:
         cluster_cv_threshold
             The CV cutoff that is used to determine the appropriateness
             of the clustering.
+        markers
+            Optional. Selects markers that are used for clustering.
         kwargs
             keyword arguments ultimately passed to the `train` function
             of the clusterer. Refer to the respective documentation.
@@ -295,12 +298,14 @@ class CytoNorm:
         None
 
         """
+
         if n_cells is not None:
             train_data_df = self._datahandler.get_ref_data_df_subsampled(
+                markers = markers,
                 n = n_cells
             )
         else:
-            train_data_df = self._datahandler.get_ref_data_df()
+            train_data_df = self._datahandler.get_ref_data_df(markers = markers)
 
         # we switch to numpy
         train_data = train_data_df.to_numpy(copy = True)
@@ -308,12 +313,14 @@ class CytoNorm:
         self._clustering.train(X = train_data,
                                **kwargs)
 
-        ref_data_df = self._datahandler.get_ref_data_df()
+        # the whole df is necessary to store the clusters since we want to
+        # perform the normalization on every channel
+        ref_data_df = self._datahandler.get_ref_data_df(markers = None)
 
-        # we switch to numpy
-        ref_data_array = ref_data_df.to_numpy(copy = True)
+        _ref_data_df = self._datahandler.get_ref_data_df(markers = markers)
+        _ref_data_array = _ref_data_df.to_numpy(copy = True)
 
-        ref_data_df["clusters"] = self._clustering.calculate_clusters(X = ref_data_array)
+        ref_data_df["clusters"] = self._clustering.calculate_clusters(X = _ref_data_array)
         ref_data_df = ref_data_df.set_index("clusters", append = True)
 
         # we give it back to the data handler
@@ -961,9 +968,6 @@ class CytoNorm:
                 sample_identifier_column = self._datahandler._sample_identifier_column,
                 **general_kwargs
             )
-
-
-
 
 def read_model(filename: Union[PathLike, str]) -> CytoNorm:
     """\

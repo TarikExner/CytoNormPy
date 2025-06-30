@@ -431,5 +431,28 @@ def test_numeric_string_index_anndata(data_anndata: AnnData,
     assert "original_batch" not in new_metadata.columns
     assert is_numeric_dtype(new_metadata["batch"])
 
+def test_marker_selection(data_anndata: AnnData,
+                          detectors: list[str],
+                          detector_subset: list[str],
+                          DATAHANDLER_DEFAULT_KWARGS: dict):
+    adata = data_anndata
+    dh = DataHandlerAnnData(adata, **DATAHANDLER_DEFAULT_KWARGS)
+
+    ref_data_df = dh.get_ref_data_df(markers = detector_subset)
+    assert ref_data_df.shape[1] == len(detector_subset)
+    assert dh.ref_data_df.shape[1] != len(detector_subset)
+
+def test_marker_selection_on_subset(data_anndata: AnnData,
+                                    detectors: list[str],
+                                    detector_subset: list[str],
+                                    DATAHANDLER_DEFAULT_KWARGS: dict):
+    adata = data_anndata
+    dh = DataHandlerAnnData(adata, **DATAHANDLER_DEFAULT_KWARGS)
+
+    ref_data_df = dh.get_ref_data_df_subsampled(markers = detector_subset, n = 10)
+    assert ref_data_df.shape[1] == len(detector_subset)
+    assert ref_data_df.shape[0] == 10
+    assert dh.ref_data_df.shape[1] != len(detector_subset)
+
 
 
