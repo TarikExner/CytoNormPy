@@ -1,9 +1,6 @@
 from ._dataset import DataHandlerFCS, DataHandlerAnnData
 from ._dataprovider import DataProviderFCS, DataProviderAnnData, DataProvider
-from ._fcs_file import (FCSFile,
-                        InfRemovalWarning,
-                        NaNRemovalWarning,
-                        TruncationWarning)
+from ._fcs_file import FCSFile, InfRemovalWarning, NaNRemovalWarning, TruncationWarning
 
 __all__ = [
     "DataHandlerFCS",
@@ -14,5 +11,5 @@ __all__ = [
     "FCSFile",
     "InfRemovalWarning",
     "NaNRemovalWarning",
-    "TruncationWarning"
+    "TruncationWarning",
 ]

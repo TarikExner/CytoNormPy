@@ -9,7 +9,8 @@ from matplotlib.figure import Figure
 from typing import Optional, Literal, Union, TypeAlias, Sequence
 from .._cytonorm._cytonorm import CytoNorm
 
-NDArrayOfAxes: TypeAlias = 'np.ndarray[Sequence[Sequence[Axes]], np.dtype[np.object_]]'
+NDArrayOfAxes: TypeAlias = "np.ndarray[Sequence[Sequence[Axes]], np.dtype[np.object_]]"
+
 
 class Plotter:
     """\
@@ -21,23 +22,24 @@ class Plotter:
     evaluation metrics.
     """
 
-    def __init__(self,
-                 cytonorm: CytoNorm):
+    def __init__(self, cytonorm: CytoNorm):
         self.cnp = cytonorm
 
-    def emd(self,
-            colorby: str,
-            data: Optional[pd.DataFrame] = None,
-            channels: Optional[Union[list[str], str]] = None,
-            labels: Optional[Union[list[str], str]] = None,
-            figsize: Optional[tuple[float, float]] = None,
-            grid: Optional[str] = None,
-            grid_n_cols: Optional[int] = None,
-            ax: Optional[Union[Axes, NDArrayOfAxes]] = None,
-            return_fig: bool = False,
-            show: bool = True,
-            save: Optional[str] = None,
-            **kwargs):
+    def emd(
+        self,
+        colorby: str,
+        data: Optional[pd.DataFrame] = None,
+        channels: Optional[Union[list[str], str]] = None,
+        labels: Optional[Union[list[str], str]] = None,
+        figsize: Optional[tuple[float, float]] = None,
+        grid: Optional[str] = None,
+        grid_n_cols: Optional[int] = None,
+        ax: Optional[Union[Axes, NDArrayOfAxes]] = None,
+        return_fig: bool = False,
+        show: bool = True,
+        save: Optional[str] = None,
+        **kwargs,
+    ):
         """\
         EMD plot visualization.
 
@@ -106,24 +108,15 @@ class Plotter:
         else:
             emd_frame = data
 
-        df = self._prepare_evaluation_frame(dataframe = emd_frame,
-                                            channels = channels,
-                                            labels = labels)
+        df = self._prepare_evaluation_frame(dataframe=emd_frame, channels=channels, labels=labels)
         df["improvement"] = (df["original"] - df["normalized"]) < 0
-        df["improvement"] = df["improvement"].map(
-            {False: "improved", True: "worsened"}
-        )
+        df["improvement"] = df["improvement"].map({False: "improved", True: "worsened"})
 
         self._check_grid_appropriate(df, grid)
 
         if grid is not None:
             fig, ax = self._generate_scatter_grid(
-                df = df,
-                colorby = colorby,
-                grid_by = grid,
-                grid_n_cols = grid_n_cols,
-                figsize = figsize,
-                **kwargs
+                df=df, colorby=colorby, grid_by=grid, grid_n_cols=grid_n_cols, figsize=figsize, **kwargs
             )
             ax_shape = ax.shape
             ax = ax.flatten()
@@ -139,54 +132,40 @@ class Plotter:
         else:
             if ax is None:
                 if figsize is None:
-                    figsize = (2,2)
-                fig, ax = plt.subplots(ncols = 1,
-                                       nrows = 1,
-                                       figsize = figsize)
+                    figsize = (2, 2)
+                fig, ax = plt.subplots(ncols=1, nrows=1, figsize=figsize)
             else:
-                fig = None,
+                fig = (None,)
                 ax = ax
             assert ax is not None
 
-            plot_kwargs = {
-                "data": df,
-                "x": "normalized",
-                "y": "original",
-                "hue": colorby,
-                "ax": ax
-            }
+            plot_kwargs = {"data": df, "x": "normalized", "y": "original", "hue": colorby, "ax": ax}
             assert isinstance(ax, Axes)
-            sns.scatterplot(**plot_kwargs,
-                            **kwargs)
+            sns.scatterplot(**plot_kwargs, **kwargs)
             self._draw_comp_line(ax)
             ax.set_title("EMD comparison")
             if colorby is not None:
-                ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
+                ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-        return self._save_or_show(
-            ax = ax,
-            fig = fig,
-            save = save,
-            show = show,
-            return_fig = return_fig
-        )
+        return self._save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
 
-    def mad(self,
-            colorby: str,
-            data: Optional[pd.DataFrame] = None,
-            file_name: Optional[Union[list[str], str]] = None,
-            channels: Optional[Union[list[str], str]] = None,
-            labels: Optional[Union[list[str], str]] = None,
-            mad_cutoff: float = 0.25,
-            grid: Optional[str] = None,
-            grid_n_cols: Optional[int] = None,
-            figsize: Optional[tuple[float, float]] = None,
-            ax: Optional[Union[Axes, NDArrayOfAxes]] = None,
-            return_fig: bool = False,
-            show: bool = True,
-            save: Optional[str] = None,
-            **kwargs
-            ):
+    def mad(
+        self,
+        colorby: str,
+        data: Optional[pd.DataFrame] = None,
+        file_name: Optional[Union[list[str], str]] = None,
+        channels: Optional[Union[list[str], str]] = None,
+        labels: Optional[Union[list[str], str]] = None,
+        mad_cutoff: float = 0.25,
+        grid: Optional[str] = None,
+        grid_n_cols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
+        ax: Optional[Union[Axes, NDArrayOfAxes]] = None,
+        return_fig: bool = False,
+        show: bool = True,
+        save: Optional[str] = None,
+        **kwargs,
+    ):
         """\
         MAD plot visualization.
 
@@ -258,25 +237,15 @@ class Plotter:
         else:
             mad_frame = data
 
-        df = self._prepare_evaluation_frame(dataframe = mad_frame,
-                                            file_name = file_name,
-                                            channels = channels,
-                                            labels = labels)
+        df = self._prepare_evaluation_frame(dataframe=mad_frame, file_name=file_name, channels=channels, labels=labels)
         df["change"] = (df["original"] - df["normalized"]) < 0
-        df["change"] = df["change"].map(
-            {False: "decreased", True: "increased"}
-        )
+        df["change"] = df["change"].map({False: "decreased", True: "increased"})
 
         self._check_grid_appropriate(df, grid)
 
         if grid is not None:
             fig, ax = self._generate_scatter_grid(
-                df = df,
-                colorby = colorby,
-                grid_by = grid,
-                grid_n_cols = grid_n_cols,
-                figsize = figsize,
-                **kwargs
+                df=df, colorby=colorby, grid_by=grid, grid_n_cols=grid_n_cols, figsize=figsize, **kwargs
             )
             ax_shape = ax.shape
             ax = ax.flatten()
@@ -284,7 +253,7 @@ class Plotter:
                 if not ax[i].axison:
                     continue
                 # we plot a line to compare the MAD values
-                self._draw_cutoff_line(ax[i], cutoff = mad_cutoff)
+                self._draw_cutoff_line(ax[i], cutoff=mad_cutoff)
                 ax[i].set_title("MAD comparison")
 
             ax = ax.reshape(ax_shape)
@@ -292,58 +261,44 @@ class Plotter:
         else:
             if ax is None:
                 if figsize is None:
-                    figsize = (2,2)
-                fig, ax = plt.subplots(ncols = 1,
-                                       nrows = 1,
-                                       figsize = figsize)
+                    figsize = (2, 2)
+                fig, ax = plt.subplots(ncols=1, nrows=1, figsize=figsize)
             else:
-                fig = None,
+                fig = (None,)
                 ax = ax
             assert ax is not None
 
-            plot_kwargs = {
-                "data": df,
-                "x": "normalized",
-                "y": "original",
-                "hue": colorby,
-                "ax": ax
-            }
+            plot_kwargs = {"data": df, "x": "normalized", "y": "original", "hue": colorby, "ax": ax}
             assert isinstance(ax, Axes)
-            sns.scatterplot(**plot_kwargs,
-                            **kwargs)
-            self._draw_cutoff_line(ax, cutoff = mad_cutoff)
+            sns.scatterplot(**plot_kwargs, **kwargs)
+            self._draw_cutoff_line(ax, cutoff=mad_cutoff)
             ax.set_title("MAD comparison")
             if colorby is not None:
-                ax.legend(bbox_to_anchor = (1.01, 0.5), loc = "center left")
+                ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-        return self._save_or_show(
-            ax = ax,
-            fig = fig,
-            save = save,
-            show = show,
-            return_fig = return_fig
-        )
+        return self._save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
 
-
-    def histogram(self,
-                  file_name: str,
-                  x_channel: Optional[str] = None,
-                  x_scale: Literal["biex", "log", "linear"] = "linear",
-                  y_scale: Literal["biex", "log", "linear"] = "linear",
-                  xlim: Optional[tuple[float, float]] = None,
-                  ylim: Optional[tuple[float, float]] = None,
-                  linthresh: float = 500,
-                  subsample: Optional[int] = None,
-                  display_reference: bool = True,
-                  grid: Optional[Literal["channels"]] = None,
-                  grid_n_cols: Optional[int] = None,
-                  channels: Optional[Union[list[str], str]] = None,
-                  figsize: Optional[tuple[float, float]] = None,
-                  ax: Optional[Axes] = None,
-                  return_fig: bool = False,
-                  show: bool = True,
-                  save: Optional[str] = None,
-                  **kwargs) -> Optional[Union[Figure, Axes]]:
+    def histogram(
+        self,
+        file_name: str,
+        x_channel: Optional[str] = None,
+        x_scale: Literal["biex", "log", "linear"] = "linear",
+        y_scale: Literal["biex", "log", "linear"] = "linear",
+        xlim: Optional[tuple[float, float]] = None,
+        ylim: Optional[tuple[float, float]] = None,
+        linthresh: float = 500,
+        subsample: Optional[int] = None,
+        display_reference: bool = True,
+        grid: Optional[Literal["channels"]] = None,
+        grid_n_cols: Optional[int] = None,
+        channels: Optional[Union[list[str], str]] = None,
+        figsize: Optional[tuple[float, float]] = None,
+        ax: Optional[Axes] = None,
+        return_fig: bool = False,
+        show: bool = True,
+        save: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[Union[Figure, Axes]]:
         """\
         Histogram visualization.
 
@@ -416,64 +371,36 @@ class Plotter:
 
         """
         if x_channel is None and grid is None:
-            raise ValueError(
-                "Either provide a gate or set 'grid' to 'channels'"
-            )
+            raise ValueError("Either provide a gate or set 'grid' to 'channels'")
         if grid == "file_name":
             raise NotImplementedError("Currently not supported")
             # raise ValueError("A Grid by file_name needs a x_channel")
         if grid == "channels" and file_name is None:
             raise ValueError("A Grid by channels needs a file_name")
 
-        data = self._prepare_data(file_name,
-                                  display_reference,
-                                  channels,
-                                  subsample = subsample)
+        data = self._prepare_data(file_name, display_reference, channels, subsample=subsample)
 
         kde_kwargs = {}
         hues = data.index.get_level_values("origin").unique().sort_values()
         if grid is not None:
             assert grid == "channels"
-            n_cols, n_rows, figsize = self._get_grid_sizes_channels(
-                df = data,
-                grid_n_cols = grid_n_cols,
-                figsize = figsize
-            )
+            n_cols, n_rows, figsize = self._get_grid_sizes_channels(df=data, grid_n_cols=grid_n_cols, figsize=figsize)
 
             # calculate it to remove empty axes later
             total_plots = n_cols * n_rows
 
             ax: NDArrayOfAxes
-            fig, ax = plt.subplots(
-                ncols = n_cols,
-                nrows = n_rows,
-                figsize = figsize,
-                sharex = False,
-                sharey = False
-            )
+            fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=False, sharey=False)
             ax = ax.flatten()
             i = 0
 
             assert ax is not None
-            
-            for i, grid_param in enumerate(data.columns):
-                plot_kwargs = {
-                    "data": data,
-                    "hue": "origin",
-                    "hue_order": hues,
-                    "x": grid_param,
-                    "ax": ax[i]
-                }
-                ax[i] = sns.kdeplot(**plot_kwargs,
-                                    **kde_kwargs,
-                                    **kwargs)
 
-                self._handle_axis(ax = ax[i],
-                                  x_scale = x_scale,
-                                  y_scale = y_scale,
-                                  xlim = xlim,
-                                  ylim = ylim,
-                                  linthresh = linthresh)
+            for i, grid_param in enumerate(data.columns):
+                plot_kwargs = {"data": data, "hue": "origin", "hue_order": hues, "x": grid_param, "ax": ax[i]}
+                ax[i] = sns.kdeplot(**plot_kwargs, **kde_kwargs, **kwargs)
+
+                self._handle_axis(ax=ax[i], x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
                 legend = ax[i].legend_
                 handles = legend.legend_handles
                 labels = [t.get_text() for t in legend.get_texts()]
@@ -487,75 +414,47 @@ class Plotter:
 
             ax = ax.reshape(n_cols, n_rows)
 
-            fig.legend(
-                handles,
-                labels,
-                bbox_to_anchor = (1.01, 0.5),
-                loc = "center left",
-                title = "origin"
-            )
-
+            fig.legend(handles, labels, bbox_to_anchor=(1.01, 0.5), loc="center left", title="origin")
 
         else:
-            plot_kwargs = {
-                "data": data,
-                "hue": "origin",
-                "hue_order": hues,
-                "x": x_channel,
-                "ax": ax
-            }
+            plot_kwargs = {"data": data, "hue": "origin", "hue_order": hues, "x": x_channel, "ax": ax}
             if ax is None:
                 if figsize is None:
-                    figsize = (2,2)
-                fig, ax = plt.subplots(ncols = 1,
-                                       nrows = 1,
-                                       figsize = figsize)
+                    figsize = (2, 2)
+                fig, ax = plt.subplots(ncols=1, nrows=1, figsize=figsize)
             else:
-                fig = None,
+                fig = (None,)
                 ax = ax
             assert ax is not None
 
-            ax = sns.kdeplot(**plot_kwargs,
-                             **kde_kwargs,
-                             **kwargs)
+            ax = sns.kdeplot(**plot_kwargs, **kde_kwargs, **kwargs)
 
-            sns.move_legend(ax,
-                            bbox_to_anchor = (1.01, 0.5),
-                            loc = "center left")
+            sns.move_legend(ax, bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-            self._handle_axis(ax = ax,
-                              x_scale = x_scale,
-                              y_scale = y_scale,
-                              xlim = xlim,
-                              ylim = ylim,
-                              linthresh = linthresh)
+            self._handle_axis(ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
 
-        return self._save_or_show(
-            ax = ax,
-            fig = fig,
-            save = save,
-            show = show,
-            return_fig = return_fig
-        )
+        return self._save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
 
-    def scatter(self,
-                file_name: str,
-                x_channel: str,
-                y_channel: str,
-                x_scale: Literal["biex", "log", "linear"] = "linear",
-                y_scale: Literal["biex", "log", "linear"] = "linear",
-                xlim: Optional[tuple[float, float]] = None,
-                ylim: Optional[tuple[float, float]] = None,
-                legend_labels: Optional[list[str]] = None,
-                subsample: Optional[int] = None,
-                linthresh: float = 500,
-                display_reference: bool = True,
-                figsize: tuple[float, float] = (2, 2),
-                ax: Optional[Axes] = None,
-                return_fig: bool = False,
-                show: bool = True,
-                save: Optional[str] = None,
-                **kwargs) -> Optional[Union[Figure, Axes]]:
+    def scatter(
+        self,
+        file_name: str,
+        x_channel: str,
+        y_channel: str,
+        x_scale: Literal["biex", "log", "linear"] = "linear",
+        y_scale: Literal["biex", "log", "linear"] = "linear",
+        xlim: Optional[tuple[float, float]] = None,
+        ylim: Optional[tuple[float, float]] = None,
+        legend_labels: Optional[list[str]] = None,
+        subsample: Optional[int] = None,
+        linthresh: float = 500,
+        display_reference: bool = True,
+        figsize: tuple[float, float] = (2, 2),
+        ax: Optional[Axes] = None,
+        return_fig: bool = False,
+        show: bool = True,
+        save: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[Union[Figure, Axes]]:
         """\
         Scatterplot visualization.
 
@@ -631,68 +530,45 @@ class Plotter:
 
         """
 
-        data = self._prepare_data(file_name,
-                                  display_reference,
-                                  channels = None,
-                                  subsample = subsample)
+        data = self._prepare_data(file_name, display_reference, channels=None, subsample=subsample)
 
         if ax is None:
-            fig, ax = plt.subplots(ncols = 1,
-                                   nrows = 1,
-                                   figsize = figsize)
+            fig, ax = plt.subplots(ncols=1, nrows=1, figsize=figsize)
         else:
-            fig = None,
+            fig = (None,)
             ax = ax
         assert ax is not None
-        
+
         hues = data.index.get_level_values("origin").unique().sort_values()
-        plot_kwargs = {
-            "data": data,
-            "hue": "origin",
-            "hue_order": hues,
-            "x": x_channel,
-            "y": y_channel,
-            "ax": ax
-        }
+        plot_kwargs = {"data": data, "hue": "origin", "hue_order": hues, "x": x_channel, "y": y_channel, "ax": ax}
 
         kwargs = self._scatter_defaults(kwargs)
 
-        sns.scatterplot(**plot_kwargs,
-                        **kwargs)
+        sns.scatterplot(**plot_kwargs, **kwargs)
 
-        self._handle_axis(ax = ax,
-                          x_scale = x_scale,
-                          y_scale = y_scale,
-                          xlim = xlim,
-                          ylim = ylim,
-                          linthresh = linthresh)
+        self._handle_axis(ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
 
-        self._handle_legend(ax = ax,
-                            legend_labels = legend_labels)
+        self._handle_legend(ax=ax, legend_labels=legend_labels)
 
-        return self._save_or_show(
-            ax = ax,
-            fig = fig,
-            save = save,
-            show = show,
-            return_fig = return_fig
-        )
+        return self._save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
 
-    def splineplot(self,
-                   file_name: str,
-                   channel: str,
-                   label_quantiles: Optional[list[float]] = [0.1, 0.25, 0.5, 0.75, 0.9],  # noqa
-                   x_scale: Literal["biex", "log", "linear"] = "linear",
-                   y_scale: Literal["biex", "log", "linear"] = "linear",
-                   xlim: Optional[tuple[float, float]] = None,
-                   ylim: Optional[tuple[float, float]] = None,
-                   linthresh: float = 500,
-                   figsize: tuple[float, float] = (2, 2),
-                   ax: Optional[Axes] = None,
-                   return_fig: bool = False,
-                   show: bool = True,
-                   save: Optional[str] = None,
-                   **kwargs) -> Optional[Union[Figure, Axes]]:
+    def splineplot(
+        self,
+        file_name: str,
+        channel: str,
+        label_quantiles: Optional[list[float]] = [0.1, 0.25, 0.5, 0.75, 0.9],  # noqa
+        x_scale: Literal["biex", "log", "linear"] = "linear",
+        y_scale: Literal["biex", "log", "linear"] = "linear",
+        xlim: Optional[tuple[float, float]] = None,
+        ylim: Optional[tuple[float, float]] = None,
+        linthresh: float = 500,
+        figsize: tuple[float, float] = (2, 2),
+        ax: Optional[Axes] = None,
+        return_fig: bool = False,
+        show: bool = True,
+        save: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[Union[Figure, Axes]]:
         """\
         Splineplot visualization.
 
@@ -767,120 +643,88 @@ class Plotter:
         ch_idx = channels.index(channel)
         channel_quantiles = np.nanmean(
             expr_quantiles.get_quantiles(
-                channel_idx = ch_idx,
-                batch_idx = batch_idx,
-                cluster_idx = None,
-                quantile_idx = None,
-                flattened = False),
-            axis = expr_quantiles._cluster_axis
+                channel_idx=ch_idx, batch_idx=batch_idx, cluster_idx=None, quantile_idx=None, flattened=False
+            ),
+            axis=expr_quantiles._cluster_axis,
         )
 
         goal_quantiles = np.nanmean(
             self.cnp._goal_distrib.get_quantiles(
-                channel_idx = ch_idx,
-                batch_idx = None,
-                cluster_idx = None,
-                quantile_idx = None,
-                flattened = False),
-            axis = expr_quantiles._cluster_axis
+                channel_idx=ch_idx, batch_idx=None, cluster_idx=None, quantile_idx=None, flattened=False
+            ),
+            axis=expr_quantiles._cluster_axis,
         )
         df = pd.DataFrame(
-            data = {
-                "original": channel_quantiles.flatten(),
-                "goal": goal_quantiles.flatten()
-            },
-            index = quantiles.flatten()
+            data={"original": channel_quantiles.flatten(), "goal": goal_quantiles.flatten()}, index=quantiles.flatten()
         )
 
         if ax is None:
-            fig, ax = plt.subplots(ncols = 1,
-                                   nrows = 1,
-                                   figsize = figsize)
+            fig, ax = plt.subplots(ncols=1, nrows=1, figsize=figsize)
         else:
-            fig = None,
+            fig = (None,)
             ax = ax
         assert ax is not None
 
-        sns.lineplot(
-            data = df,
-            x = "original",
-            y = "goal",
-            ax = ax,
-            **kwargs
-        )
+        sns.lineplot(data=df, x="original", y="goal", ax=ax, **kwargs)
         ax.set_title(channel)
-        self._handle_axis(ax = ax,
-                          x_scale = x_scale,
-                          y_scale = y_scale,
-                          xlim = xlim,
-                          ylim = ylim,
-                          linthresh = linthresh)
+        self._handle_axis(ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
 
         ylims = ax.get_ylim()
         xlims = ax.get_xlim()
         xmin, xmax = ax.get_xlim()
         for q in label_quantiles:
-            plt.vlines(x = df.loc[df.index == q, "original"].iloc[0],
-                       ymin = ylims[0],
-                       ymax = df.loc[df.index == q, "goal"].iloc[0],
-                       color = "black",
-                       linewidth = 0.4)
-            plt.hlines(y = df.loc[df.index == q, "goal"].iloc[0],
-                       xmin = xlims[0],
-                       xmax = df.loc[df.index == q, "original"].iloc[0],
-                       color = "black",
-                       linewidth = 0.4)
-            plt.text(x = xmin + 0.01*(xmax-xmin),
-                     y = df.loc[df.index == q, "goal"].iloc[0] + ((ylims[1] - ylims[0]) / 200),
-                     s = f"Q{int(q*100)}")
+            plt.vlines(
+                x=df.loc[df.index == q, "original"].iloc[0],
+                ymin=ylims[0],
+                ymax=df.loc[df.index == q, "goal"].iloc[0],
+                color="black",
+                linewidth=0.4,
+            )
+            plt.hlines(
+                y=df.loc[df.index == q, "goal"].iloc[0],
+                xmin=xlims[0],
+                xmax=df.loc[df.index == q, "original"].iloc[0],
+                color="black",
+                linewidth=0.4,
+            )
+            plt.text(
+                x=xmin + 0.01 * (xmax - xmin),
+                y=df.loc[df.index == q, "goal"].iloc[0] + ((ylims[1] - ylims[0]) / 200),
+                s=f"Q{int(q * 100)}",
+            )
 
-        return self._save_or_show(
-            ax = ax,
-            fig = fig,
-            save = save,
-            show = show,
-            return_fig = return_fig
-        )
+        return self._save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
 
-    def _unify_axes_dimensions(self,
-                               ax: Axes) -> None:
-
+    def _unify_axes_dimensions(self, ax: Axes) -> None:
         axes_min = min(ax.get_xlim()[0], ax.get_ylim()[0])
         axes_max = max(ax.get_xlim()[1], ax.get_ylim()[1])
         axis_lims = (axes_min, axes_max)
         ax.set_xlim(axis_lims)
         ax.set_ylim(axis_lims)
-    
-    def _draw_comp_line(self,
-                        ax: Axes) -> None:
 
+    def _draw_comp_line(self, ax: Axes) -> None:
         self._unify_axes_dimensions(ax)
 
         comp_line_x = list(ax.get_xlim())
         comp_line_y = comp_line_x
-        ax.plot(comp_line_x, comp_line_y, color = "red", linestyle = "--")
+        ax.plot(comp_line_x, comp_line_y, color="red", linestyle="--")
         ax.set_xlim(comp_line_x[0], comp_line_x[1])
         ax.set_ylim(comp_line_x[0], comp_line_x[1])
         return
 
-    def _draw_cutoff_line(self,
-                          ax: Axes,
-                          cutoff: float) -> None:
-
+    def _draw_cutoff_line(self, ax: Axes, cutoff: float) -> None:
         self._unify_axes_dimensions(ax)
 
         upper_bound_x = list(ax.get_xlim())
         upper_bound_y = [val + cutoff for val in upper_bound_x]
         lower_bound_x = list(ax.get_ylim())
         lower_bound_y = [val - cutoff for val in lower_bound_x]
-        ax.plot(upper_bound_x, upper_bound_y, color = "red", linestyle = "--")
-        ax.plot(upper_bound_x, lower_bound_y, color = "red", linestyle = "--")
+        ax.plot(upper_bound_x, upper_bound_y, color="red", linestyle="--")
+        ax.plot(upper_bound_x, lower_bound_y, color="red", linestyle="--")
         ax.set_xlim(upper_bound_x[0], upper_bound_x[1])
         ax.set_ylim(upper_bound_x[0], upper_bound_x[1])
 
-    def _check_grid_appropriate(self,
-                                df: pd.DataFrame,
-                                grid_by: Optional[str]) -> None:
+    def _check_grid_appropriate(self, df: pd.DataFrame, grid_by: Optional[str]) -> None:
         if grid_by is not None:
             if df[grid_by].nunique() == 1:
                 error_msg = "Only one unique value for the grid variable. "
@@ -888,11 +732,9 @@ class Plotter:
                 raise ValueError(error_msg)
         return
 
-    def _get_grid_sizes_channels(self,
-                                 df: pd.DataFrame,
-                                 grid_n_cols: Optional[int],
-                                 figsize: Optional[tuple[float, float]]) -> tuple:
-
+    def _get_grid_sizes_channels(
+        self, df: pd.DataFrame, grid_n_cols: Optional[int], figsize: Optional[tuple[float, float]]
+    ) -> tuple:
         n_plots = len(df.columns)
         if grid_n_cols is None:
             n_cols = int(np.ceil(np.sqrt(n_plots)))
@@ -902,16 +744,13 @@ class Plotter:
         n_rows = int(np.ceil(n_plots / n_cols))
 
         if figsize is None:
-            figsize = (3*n_cols, 3*n_rows)
+            figsize = (3 * n_cols, 3 * n_rows)
 
         return n_cols, n_rows, figsize
 
-    def _get_grid_sizes(self,
-                        df: pd.DataFrame,
-                        grid_by: str,
-                        grid_n_cols: Optional[int],
-                        figsize: Optional[tuple[float, float]]) -> tuple:
-
+    def _get_grid_sizes(
+        self, df: pd.DataFrame, grid_by: str, grid_n_cols: Optional[int], figsize: Optional[tuple[float, float]]
+    ) -> tuple:
         n_plots = df[grid_by].nunique()
         if grid_n_cols is None:
             n_cols = int(np.ceil(np.sqrt(n_plots)))
@@ -921,53 +760,33 @@ class Plotter:
         n_rows = int(np.ceil(n_plots / n_cols))
 
         if figsize is None:
-            figsize = (3*n_cols, 3*n_rows)
+            figsize = (3 * n_cols, 3 * n_rows)
 
         return n_cols, n_rows, figsize
 
-    def _generate_scatter_grid(self,
-                               df: pd.DataFrame,
-                               grid_by: str,
-                               grid_n_cols: Optional[int],
-                               figsize: tuple[float, float],
-                               colorby: Optional[str],
-                               **scatter_kwargs: Optional[dict]
-                               ) -> tuple[Figure, NDArrayOfAxes]:
-
-        n_cols, n_rows, figsize = self._get_grid_sizes(
-            df = df,
-            grid_by = grid_by,
-            grid_n_cols = grid_n_cols,
-            figsize = figsize
-        )
+    def _generate_scatter_grid(
+        self,
+        df: pd.DataFrame,
+        grid_by: str,
+        grid_n_cols: Optional[int],
+        figsize: tuple[float, float],
+        colorby: Optional[str],
+        **scatter_kwargs: Optional[dict],
+    ) -> tuple[Figure, NDArrayOfAxes]:
+        n_cols, n_rows, figsize = self._get_grid_sizes(df=df, grid_by=grid_by, grid_n_cols=grid_n_cols, figsize=figsize)
 
         # calculate it to remove empty axes later
         total_plots = n_cols * n_rows
-        
-        hue = None if colorby == grid_by else colorby
-        plot_params = {
-            "x": "normalized",
-            "y": "original",
-            "hue": hue
-        }
 
-        fig, ax = plt.subplots(
-            ncols = n_cols,
-            nrows = n_rows,
-            figsize = figsize,
-            sharex = True,
-            sharey = True
-        )
+        hue = None if colorby == grid_by else colorby
+        plot_params = {"x": "normalized", "y": "original", "hue": hue}
+
+        fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=True, sharey=True)
         ax = ax.flatten()
         i = 0
 
         for i, grid_param in enumerate(df[grid_by].unique()):
-            sns.scatterplot(
-                data = df[df[grid_by] == grid_param],
-                **plot_params,
-                **scatter_kwargs,
-                ax = ax[i]
-            )
+            sns.scatterplot(data=df[df[grid_by] == grid_param], **plot_params, **scatter_kwargs, ax=ax[i])
             ax[i].set_title(grid_param)
             if hue is not None:
                 handles, labels = ax[i].get_legend_handles_labels()
@@ -981,87 +800,72 @@ class Plotter:
         ax = ax.reshape(n_cols, n_rows)
 
         if hue is not None:
-            fig.legend(
-                handles,
-                labels,
-                bbox_to_anchor = (1.01, 0.5),
-                loc = "center left",
-                title = colorby
-            )
+            fig.legend(handles, labels, bbox_to_anchor=(1.01, 0.5), loc="center left", title=colorby)
 
         return fig, ax
 
-    def _scatter_defaults(self,
-                          kwargs: dict) -> dict:
+    def _scatter_defaults(self, kwargs: dict) -> dict:
         kwargs["s"] = kwargs.get("s", 2)
         kwargs["edgecolor"] = kwargs.get("edgecolor", "black")
         kwargs["linewidth"] = kwargs.get("linewidth", 0.1)
         return kwargs
 
-    def _prepare_evaluation_frame(self,
-                                  dataframe: pd.DataFrame,
-                                  file_name: Optional[Union[list[str], str]] = None,
-                                  channels: Optional[Union[list[str], str]] = None,
-                                  labels: Optional[Union[list[str], str]] = None) -> pd.DataFrame:
+    def _prepare_evaluation_frame(
+        self,
+        dataframe: pd.DataFrame,
+        file_name: Optional[Union[list[str], str]] = None,
+        channels: Optional[Union[list[str], str]] = None,
+        labels: Optional[Union[list[str], str]] = None,
+    ) -> pd.DataFrame:
         index_names = dataframe.index.names
         dataframe = dataframe.reset_index()
-        melted = dataframe.melt(id_vars = index_names,
-                                var_name = "channel",
-                                value_name = "value")
-        df = melted.pivot_table(index = [
-                                    idx_name
-                                    for idx_name in index_names
-                                    if idx_name != "origin"
-                                ] + ["channel"],
-                                columns = "origin",
-                                values = "value").reset_index()
+        melted = dataframe.melt(id_vars=index_names, var_name="channel", value_name="value")
+        df = melted.pivot_table(
+            index=[idx_name for idx_name in index_names if idx_name != "origin"] + ["channel"],
+            columns="origin",
+            values="value",
+        ).reset_index()
         if file_name is not None:
             if not isinstance(file_name, list):
                 file_name = [file_name]
-            df = df.loc[df["file_name"].isin(file_name),:]
+            df = df.loc[df["file_name"].isin(file_name), :]
 
         if channels is not None:
             if not isinstance(channels, list):
                 channels = [channels]
-            df = df.loc[df["channel"].isin(channels),:]
+            df = df.loc[df["channel"].isin(channels), :]
 
         if labels is not None:
             if not isinstance(labels, list):
                 labels = [labels]
-            df = df.loc[df["label"].isin(labels),:]
+            df = df.loc[df["label"].isin(labels), :]
 
         return df
 
-
-    def _select_index_levels(self,
-                             df: pd.DataFrame):
+    def _select_index_levels(self, df: pd.DataFrame):
         index_levels_to_keep = ["origin", "reference", "batch", "file_name"]
         for name in df.index.names:
             if name not in index_levels_to_keep:
                 df = df.droplevel(name)
         return df
 
-    def _prepare_data(self,
-                      file_name: str,
-                      display_reference: bool,
-                      channels: Optional[Union[list[str], str]],
-                      subsample: Optional[int]
-                      ) -> pd.DataFrame:
+    def _prepare_data(
+        self,
+        file_name: str,
+        display_reference: bool,
+        channels: Optional[Union[list[str], str]],
+        subsample: Optional[int],
+    ) -> pd.DataFrame:
+        original_df = self.cnp._datahandler.get_dataframe(file_name)
 
-        original_df = self.cnp._datahandler \
-            .get_dataframe(file_name)
-
-        normalized_df = self.cnp.\
-            _normalize_file(
-                df = original_df.copy(),
-                batch = self.cnp._datahandler.get_batch(file_name)
-            )
+        normalized_df = self.cnp._normalize_file(
+            df=original_df.copy(), batch=self.cnp._datahandler.get_batch(file_name)
+        )
 
         if display_reference is True:
-            ref_df = self.cnp._datahandler \
-                .get_corresponding_ref_dataframe(file_name)
+            ref_df = self.cnp._datahandler.get_corresponding_ref_dataframe(file_name)
             ref_df["origin"] = "reference"
-            ref_df = ref_df.set_index("origin", append = True, drop = True)
+            ref_df = ref_df.set_index("origin", append=True, drop=True)
             ref_df = self._select_index_levels(ref_df)
         else:
             ref_df = None
@@ -1069,8 +873,8 @@ class Plotter:
         original_df["origin"] = "original"
         normalized_df["origin"] = "transformed"
 
-        original_df = original_df.set_index("origin", append = True, drop = True)
-        normalized_df = normalized_df.set_index("origin", append = True, drop = True)
+        original_df = original_df.set_index("origin", append=True, drop=True)
+        normalized_df = normalized_df.set_index("origin", append=True, drop=True)
 
         original_df = self._select_index_levels(original_df)
         normalized_df = self._select_index_levels(normalized_df)
@@ -1078,38 +882,32 @@ class Plotter:
         # we clean up the indices in order to not mess up the
 
         if ref_df is not None:
-            data = pd.concat([normalized_df,
-                              original_df,
-                              ref_df], axis = 0)
+            data = pd.concat([normalized_df, original_df, ref_df], axis=0)
         else:
-            data = pd.concat([normalized_df,
-                              original_df], axis = 0)
+            data = pd.concat([normalized_df, original_df], axis=0)
 
         if channels is not None:
             data = data[channels]
 
         if subsample:
-            data = data.sample(n = subsample)
+            data = data.sample(n=subsample)
         else:
-            data = data.sample(frac = 1)  # overlays are better shuffled
+            data = data.sample(frac=1)  # overlays are better shuffled
 
         return data
 
-    def _handle_axis(self,
-                     ax: Axes,
-                     x_scale: str,
-                     y_scale: str,
-                     linthresh: Optional[float],
-                     xlim: Optional[tuple[float, float]],
-                     ylim: Optional[tuple[float, float]]) -> None:
-
+    def _handle_axis(
+        self,
+        ax: Axes,
+        x_scale: str,
+        y_scale: str,
+        linthresh: Optional[float],
+        xlim: Optional[tuple[float, float]],
+        ylim: Optional[tuple[float, float]],
+    ) -> None:
         # Axis scale
-        x_scale_kwargs: dict[str, Optional[Union[float, str]]] = {
-            "value": x_scale if x_scale != "biex" else "symlog"
-        }
-        y_scale_kwargs: dict[str, Optional[Union[float, str]]] = {
-            "value": y_scale if y_scale != "biex" else "symlog"
-        }
+        x_scale_kwargs: dict[str, Optional[Union[float, str]]] = {"value": x_scale if x_scale != "biex" else "symlog"}
+        y_scale_kwargs: dict[str, Optional[Union[float, str]]] = {"value": y_scale if y_scale != "biex" else "symlog"}
 
         if x_scale == "biex":
             x_scale_kwargs["linthresh"] = linthresh
@@ -1127,29 +925,19 @@ class Plotter:
 
         return
 
-    def _handle_legend(self,
-                       ax: Axes,
-                       legend_labels: Optional[list[str]]) -> None:
+    def _handle_legend(self, ax: Axes, legend_labels: Optional[list[str]]) -> None:
         # Legend
         handles, labels = ax.get_legend_handles_labels()
         if legend_labels:
             labels = legend_labels
-        ax.legend(
-            handles, labels,
-            loc = "center left",
-            bbox_to_anchor = (1.01, 0.5)
-        )
+        ax.legend(handles, labels, loc="center left", bbox_to_anchor=(1.01, 0.5))
         return
 
-    def _save_or_show(self,
-                      ax: Axes,
-                      fig: Optional[Figure],
-                      save: Optional[str],
-                      show: bool,
-                      return_fig: bool) -> Optional[Union[Figure, Axes]]:
-
+    def _save_or_show(
+        self, ax: Axes, fig: Optional[Figure], save: Optional[str], show: bool, return_fig: bool
+    ) -> Optional[Union[Figure, Axes]]:
         if save:
-            plt.savefig(save, dpi = 300, bbox_inches = "tight")
+            plt.savefig(save, dpi=300, bbox_inches="tight")
 
         if show:
             plt.show()

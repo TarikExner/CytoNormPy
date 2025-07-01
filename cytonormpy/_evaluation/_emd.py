@@ -6,22 +6,22 @@ from anndata import AnnData
 
 from .._transformation import Transformer
 from ._emd_utils import _calculate_emd_per_frame
-from ._utils import (_annotate_origin,
-                     _prepare_data_fcs,
-                     _prepare_data_anndata)
+from ._utils import _annotate_origin, _prepare_data_fcs, _prepare_data_anndata
 
 
-def emd_comparison_from_anndata(adata: AnnData,
-                                file_list: Union[list[str], str],
-                                channels: Optional[list[str]],
-                                orig_layer: str,
-                                norm_layer: str,
-                                sample_identifier_column: str = "file_name",
-                                cell_labels: Optional[str] = None,
-                                transformer: Optional[Transformer] = None) -> pd.DataFrame:
+def emd_comparison_from_anndata(
+    adata: AnnData,
+    file_list: Union[list[str], str],
+    channels: Optional[list[str]],
+    orig_layer: str,
+    norm_layer: str,
+    sample_identifier_column: str = "file_name",
+    cell_labels: Optional[str] = None,
+    transformer: Optional[Transformer] = None,
+) -> pd.DataFrame:
     """
     This function is a wrapper around `emd_from_anndata` that directly combines the
-    normalized and unnormalized dataframes. 
+    normalized and unnormalized dataframes.
 
     Parameters
     ----------
@@ -52,28 +52,22 @@ def emd_comparison_from_anndata(adata: AnnData,
     kwargs = locals()
     orig_layer = kwargs.pop("orig_layer")
     norm_layer = kwargs.pop("norm_layer")
-    orig_df = emd_from_anndata(
-        origin = "unnormalized",
-        layer = orig_layer,
-        **kwargs
-    )
-    norm_df = emd_from_anndata(
-        origin = "normalized",
-        layer = norm_layer,
-        **kwargs
-    )
+    orig_df = emd_from_anndata(origin="unnormalized", layer=orig_layer, **kwargs)
+    norm_df = emd_from_anndata(origin="normalized", layer=norm_layer, **kwargs)
 
-    return pd.concat([orig_df, norm_df], axis = 0)
+    return pd.concat([orig_df, norm_df], axis=0)
 
 
-def emd_from_anndata(adata: AnnData,
-                     file_list: Union[list[str], str],
-                     channels: Optional[list[str]],
-                     layer: str,
-                     sample_identifier_column: str = "file_name",
-                     cell_labels: Optional[str] = None,
-                     origin: Optional[str] = None,
-                     transformer: Optional[Transformer] = None) -> pd.DataFrame:
+def emd_from_anndata(
+    adata: AnnData,
+    file_list: Union[list[str], str],
+    channels: Optional[list[str]],
+    layer: str,
+    sample_identifier_column: str = "file_name",
+    cell_labels: Optional[str] = None,
+    origin: Optional[str] = None,
+    transformer: Optional[Transformer] = None,
+) -> pd.DataFrame:
     """\
     Function to evaluate the EMD on an AnnData file.
 
@@ -106,35 +100,35 @@ def emd_from_anndata(adata: AnnData,
     A :class:`pandas.DataFrame` containing the MAD values per file or per file and `cell_label`.
 
     """
-    
+
     df, channels = _prepare_data_anndata(
-        adata = adata,
-        file_list = file_list,
-        layer = layer,
-        cell_labels = cell_labels,
-        sample_identifier_column = sample_identifier_column,
-        channels = channels,
-        transformer = transformer
+        adata=adata,
+        file_list=file_list,
+        layer=layer,
+        cell_labels=cell_labels,
+        sample_identifier_column=sample_identifier_column,
+        channels=channels,
+        transformer=transformer,
     )
 
+    df = _calculate_emd_per_frame(df, channels)
 
-    df = _calculate_emd_per_frame(
-        df, channels
-    )
-    
     if origin is not None:
         df = _annotate_origin(df, origin)
 
     return df
 
-def emd_comparison_from_fcs(input_directory: PathLike,
-                            original_files: Union[list[str], str],
-                            normalized_files: Union[list[str], str],
-                            norm_prefix: str = "Norm_",
-                            channels: Optional[list[str]] = None,
-                            cell_labels: Optional[dict] = None,
-                            truncate_max_range: bool = False,
-                            transformer: Optional[Transformer] = None) -> pd.DataFrame:
+
+def emd_comparison_from_fcs(
+    input_directory: PathLike,
+    original_files: Union[list[str], str],
+    normalized_files: Union[list[str], str],
+    norm_prefix: str = "Norm_",
+    channels: Optional[list[str]] = None,
+    cell_labels: Optional[dict] = None,
+    truncate_max_range: bool = False,
+    transformer: Optional[Transformer] = None,
+) -> pd.DataFrame:
     """
     This function is a wrapper around `emd_from_fcs` that directly combines the
     normalized and unnormalized dataframes. Currently only works if the
@@ -173,29 +167,24 @@ def emd_comparison_from_fcs(input_directory: PathLike,
     orig_files = kwargs.pop("original_files")
     norm_files = kwargs.pop("normalized_files")
     norm_prefix = kwargs.pop("norm_prefix")
-    orig_df = emd_from_fcs(
-        origin = "original",
-        files = orig_files,
-        **kwargs
-    )
-    norm_df = emd_from_fcs(
-        origin = "normalized",
-        files = norm_files,
-        **kwargs
-    )
+    orig_df = emd_from_fcs(origin="original", files=orig_files, **kwargs)
+    norm_df = emd_from_fcs(origin="normalized", files=norm_files, **kwargs)
 
     # we have to rename the file_names
-    df = pd.concat([orig_df, norm_df], axis = 0)
+    df = pd.concat([orig_df, norm_df], axis=0)
 
     return df
-                     
-def emd_from_fcs(input_directory: PathLike,
-                 files: Union[list[str], str],
-                 channels: Optional[list[str]] = None,
-                 cell_labels: Optional[dict] = None,
-                 truncate_max_range: bool = False,
-                 origin: Optional[str] = None,
-                 transformer: Optional[Transformer] = None) -> pd.DataFrame:
+
+
+def emd_from_fcs(
+    input_directory: PathLike,
+    files: Union[list[str], str],
+    channels: Optional[list[str]] = None,
+    cell_labels: Optional[dict] = None,
+    truncate_max_range: bool = False,
+    origin: Optional[str] = None,
+    transformer: Optional[Transformer] = None,
+) -> pd.DataFrame:
     """\
     Function to evaluate the EMD on a given list of FCS-files.
 
@@ -230,18 +219,16 @@ def emd_from_fcs(input_directory: PathLike,
         files = [files]
 
     df, channels = _prepare_data_fcs(
-        input_directory = input_directory,
-        files = files,
-        channels = channels,
-        cell_labels = cell_labels,
-        truncate_max_range = truncate_max_range,
-        transformer = transformer
+        input_directory=input_directory,
+        files=files,
+        channels=channels,
+        cell_labels=cell_labels,
+        truncate_max_range=truncate_max_range,
+        transformer=transformer,
     )
 
-    df = _calculate_emd_per_frame(
-        df, channels
-    )
-    
+    df = _calculate_emd_per_frame(df, channels)
+
     if origin is not None:
         df = _annotate_origin(df, origin)
 

@@ -18,15 +18,11 @@ class ClusterBase:
         pass
 
     @abstractmethod
-    def train(self,
-              X: np.ndarray,
-              **kwargs) -> None:
+    def train(self, X: np.ndarray, **kwargs) -> None:
         pass
 
     @abstractmethod
-    def calculate_clusters(self,
-                           X: np.ndarray,
-                           **kwargs) -> np.ndarray:
+    def calculate_clusters(self, X: np.ndarray, **kwargs) -> np.ndarray:
         pass
 
 
@@ -46,8 +42,7 @@ class FlowSOM(ClusterBase):
 
     """
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
         if not kwargs:
             kwargs = {}
@@ -57,9 +52,7 @@ class FlowSOM(ClusterBase):
             kwargs["seed"] = 187
         self.est = FlowSOMEstimator(**kwargs)
 
-    def train(self,
-              X: np.ndarray,
-              **kwargs):
+    def train(self, X: np.ndarray, **kwargs):
         """\
         Trains the SOM. Calls :class:`flowsom.FlowSOMEstimator.fit()` internally.
 
@@ -78,9 +71,7 @@ class FlowSOM(ClusterBase):
         self.est.fit(X, **kwargs)
         return
 
-    def calculate_clusters(self,
-                           X: np.ndarray,
-                           **kwargs) -> np.ndarray:
+    def calculate_clusters(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """\
         Calculates the clusters. Calls :class:`flowsom.FlowSOMEstimator.predict()` internally.
 
@@ -115,16 +106,13 @@ class MeanShift(ClusterBase):
 
     """
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
         if "random_state" not in kwargs:
             kwargs["random_state"] = 187
         self.est = meanshiftclassifier(**kwargs)
 
-    def train(self,
-              X: np.ndarray,
-              **kwargs):
+    def train(self, X: np.ndarray, **kwargs):
         """\
         Trains the classifier. Calls :class:`sklearn.cluster.MeanShift.fit()` internally.
 
@@ -143,9 +131,7 @@ class MeanShift(ClusterBase):
         self.est.fit(X, **kwargs)
         return
 
-    def calculate_clusters(self,
-                           X: np.ndarray,
-                           **kwargs) -> np.ndarray:
+    def calculate_clusters(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """\
         Calculates the clusters. Calls :class:`sklearn.cluster.MeanShift.predict()` internally.
 
@@ -180,16 +166,13 @@ class KMeans(ClusterBase):
 
     """
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
         if "random_state" not in kwargs:
             kwargs["random_state"] = 187
         self.est = knnclassifier(**kwargs)
 
-    def train(self,
-              X: np.ndarray,
-              **kwargs):
+    def train(self, X: np.ndarray, **kwargs):
         """\
         Trains the classifier. Calls :class:`sklearn.cluster.KMeans.fit()` internally.
 
@@ -208,9 +191,7 @@ class KMeans(ClusterBase):
         self.est.fit(X, **kwargs)
         return
 
-    def calculate_clusters(self,
-                           X: np.ndarray,
-                           **kwargs) -> np.ndarray:
+    def calculate_clusters(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """\
         Calculates the clusters. Calls :class:`sklearn.cluster.KMeans.predict()` internally.
 
@@ -245,16 +226,13 @@ class AffinityPropagation(ClusterBase):
 
     """
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
         if "random_state" not in kwargs:
             kwargs["random_state"] = 187
         self.est = affinitypropagationclassifier(**kwargs)
 
-    def train(self,
-              X: np.ndarray,
-              **kwargs):
+    def train(self, X: np.ndarray, **kwargs):
         """\
         Trains the classifier. Calls :class:`sklearn.cluster.AffinityPropagation.fit()` internally.
 
@@ -273,9 +251,7 @@ class AffinityPropagation(ClusterBase):
         self.est.fit(X, **kwargs)
         return
 
-    def calculate_clusters(self,
-                           X: np.ndarray,
-                           **kwargs) -> np.ndarray:
+    def calculate_clusters(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """\
         Calculates the clusters. Calls :class:`sklearn.cluster.AffinityPropagation.predict()` internally.
 

@@ -19,8 +19,7 @@ class IdentitySpline:
     def __init__(self):
         pass
 
-    def __call__(self,
-                 data: np.ndarray) -> np.ndarray:
+    def __call__(self, data: np.ndarray) -> np.ndarray:
         return data
 
 
@@ -58,14 +57,16 @@ class Spline:
         control the behaviour outside the data range.
 
     """
-    def __init__(self,
-                 batch: Union[float, str],
-                 cluster: Union[float, str],
-                 channel: str,
-                 spline_calc_function: Callable = CubicHermiteSpline,
-                 extrapolate: Union[Literal["linear", "spline"], bool] = "linear", # noqa
-                 limits: Optional[Union[list[float], np.ndarray]] = None
-                 ) -> None:
+
+    def __init__(
+        self,
+        batch: Union[float, str],
+        cluster: Union[float, str],
+        channel: str,
+        spline_calc_function: Callable = CubicHermiteSpline,
+        extrapolate: Union[Literal["linear", "spline"], bool] = "linear",  # noqa
+        limits: Optional[Union[list[float], np.ndarray]] = None,
+    ) -> None:
         self.batch = batch
         self.channel = channel
         self.cluster = cluster
@@ -76,21 +77,19 @@ class Spline:
         if self._limits is not None:
             self._limits = np.array(self._limits)
 
-    def _select_interpolants(self,
-                             x: np.ndarray,
-                             y: np.ndarray) -> np.ndarray:
+    def _select_interpolants(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         return _select_interpolants_numba(x, y)
 
-    def _append_limits(self,
-                       arr: np.ndarray) -> np.ndarray:
+    def _append_limits(self, arr: np.ndarray) -> np.ndarray:
         if self._limits is None:
             return arr
         return np.hstack([arr, self._limits])
 
-    def fit(self,
-            current_distribution: Optional[np.ndarray],
-            goal_distribution: Optional[np.ndarray],
-            ) -> None:
+    def fit(
+        self,
+        current_distribution: Optional[np.ndarray],
+        goal_distribution: Optional[np.ndarray],
+    ) -> None:
         """\
         Interpolates a function between the current expression values
         and the goal expression values. First, limits are appended
@@ -124,21 +123,15 @@ class Spline:
 
             current_distribution = self._append_limits(current_distribution)
             goal_distribution = self._append_limits(goal_distribution)
-            
-            current_distribution, goal_distribution = regularize_values(
-                current_distribution,
-                goal_distribution
-            )
 
-            m = self._select_interpolants(
-                current_distribution,
-                goal_distribution
-            )
+            current_distribution, goal_distribution = regularize_values(current_distribution, goal_distribution)
+
+            m = self._select_interpolants(current_distribution, goal_distribution)
             self.fit_func: PPoly = self.spline_calc_function(
                 current_distribution,
                 goal_distribution,
-                dydx = m,
-                extrapolate = True if self._extrapolate is not False else False
+                dydx=m,
+                extrapolate=True if self._extrapolate is not False else False,
             )
             if self._extrapolate == "linear":
                 self._extrapolate_linear()
@@ -166,8 +159,7 @@ class Spline:
         rightcoeffs = np.array([0, 0, rightslope, rightynext])
         self.fit_func.extend(rightcoeffs[..., None], np.r_[rightxnext])
 
-    def transform(self,
-                  distribution: np.ndarray) -> np.ndarray:
+    def transform(self, distribution: np.ndarray) -> np.ndarray:
         """\
         Calculates new expression values based on the spline function.
 
@@ -195,16 +187,14 @@ class Splines:
 
     """
 
-    def __init__(self,
-                 batches: list[Union[float, str]],
-                 clusters: list[Union[float, str]],
-                 channels: list[Union[float, str]]) -> None:
+    def __init__(
+        self, batches: list[Union[float, str]], clusters: list[Union[float, str]], channels: list[Union[float, str]]
+    ) -> None:
         self._init_dictionary(batches, clusters, channels)
 
-    def _init_dictionary(self,
-                         batches: list[Union[float, str]],
-                         clusters: list[Union[float, str]],
-                         channels: list[Union[float, str]]) -> None:
+    def _init_dictionary(
+        self, batches: list[Union[float, str]], clusters: list[Union[float, str]], channels: list[Union[float, str]]
+    ) -> None:
         """\
         Instantiates the dictionary.
 
@@ -223,16 +213,10 @@ class Splines:
 
         """
         self._splines: dict = {
-            batch:
-                {cluster:
-                    {channel: None
-                     for channel in channels}
-                 for cluster in clusters}
-            for batch in batches
+            batch: {cluster: {channel: None for channel in channels} for cluster in clusters} for batch in batches
         }
 
-    def add_spline(self,
-                   spline: Spline) -> None:
+    def add_spline(self, spline: Spline) -> None:
         """\
         Adds the spline function according to from the dict
         according to batch, cluster and channel.
@@ -253,10 +237,7 @@ class Splines:
         channel = spline.channel
         self._splines[batch][cluster][channel] = spline
 
-    def remove_spline(self,
-                      batch: Union[float, str],
-                      cluster: Union[float, str],
-                      channel: Union[float, str]) -> None:
+    def remove_spline(self, batch: Union[float, str], cluster: Union[float, str], channel: Union[float, str]) -> None:
         """\
         Deletes the spline function according to from the dict
         according to batch, cluster and channel.
@@ -277,10 +258,7 @@ class Splines:
         """
         del self._splines[batch][cluster][channel]
 
-    def get_spline(self,
-                   batch: Union[float, str],
-                   cluster: Union[float, str],
-                   channel: str) -> Spline:
+    def get_spline(self, batch: Union[float, str], cluster: Union[float, str], channel: str) -> Spline:
         """\
         Returns the correct spline function according to
         batch, cluster and channel.
@@ -301,11 +279,9 @@ class Splines:
         """
         return self._splines[batch][cluster][channel]
 
-    def transform(self,
-                  data: np.ndarray,
-                  batch: Union[float, str],
-                  cluster: Union[float, str],
-                  channel: str) -> np.ndarray:
+    def transform(
+        self, data: np.ndarray, batch: Union[float, str], cluster: Union[float, str], channel: str
+    ) -> np.ndarray:
         """\
         Extracts the correct spline function according to
         batch, cluster and channel and returns the corrected
@@ -327,7 +303,5 @@ class Splines:
         A numpy array with the corrected expression values.
 
         """
-        req_spline: Spline = self.get_spline(batch = batch,
-                                             cluster = cluster,
-                                             channel = channel)
+        req_spline: Spline = self.get_spline(batch=batch, cluster=cluster, channel=channel)
         return req_spline.transform(data)

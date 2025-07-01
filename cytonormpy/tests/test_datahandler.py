@@ -6,6 +6,7 @@ import numpy as np
 from anndata import AnnData
 from cytonormpy._dataset._dataset import DataHandlerFCS, DataHandlerAnnData
 
+
 def test_technical_setters_and_append(datahandleranndata: DataHandlerAnnData):
     dh = datahandleranndata
     dh.flow_technicals = ["foo"]
@@ -22,16 +23,12 @@ def test_technical_setters_and_append(datahandleranndata: DataHandlerAnnData):
     assert "q" in dh.spectral_flow_technicals
 
 
-def test_correct_df_shape_all_channels(metadata: pd.DataFrame,
-                                       INPUT_DIR: Path):
-    dh = DataHandlerFCS(metadata = metadata,
-                        input_directory = INPUT_DIR,
-                        channels = "all")
+def test_correct_df_shape_all_channels(metadata: pd.DataFrame, INPUT_DIR: Path):
+    dh = DataHandlerFCS(metadata=metadata, input_directory=INPUT_DIR, channels="all")
     assert dh.ref_data_df.shape == (3000, 55)
 
 
-def test_correct_df_shape_all_channels_anndata(data_anndata: AnnData,
-                                               DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_correct_df_shape_all_channels_anndata(data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict):
     kwargs = DATAHANDLER_DEFAULT_KWARGS.copy()
     kwargs["channels"] = "all"
     dh = DataHandlerAnnData(data_anndata, **kwargs)
@@ -48,31 +45,22 @@ def test_correct_df_shape_markers_anndata(datahandleranndata: DataHandlerAnnData
     assert datahandleranndata.ref_data_df.shape == (3000, 53)
 
 
-def test_correct_df_shape_channellist(metadata: pd.DataFrame,
-                                      detectors: list[str],
-                                      INPUT_DIR: Path):
-    dh = DataHandlerFCS(metadata = metadata,
-                        input_directory = INPUT_DIR,
-                        channels = detectors[:30])
+def test_correct_df_shape_channellist(metadata: pd.DataFrame, detectors: list[str], INPUT_DIR: Path):
+    dh = DataHandlerFCS(metadata=metadata, input_directory=INPUT_DIR, channels=detectors[:30])
     assert dh.ref_data_df.shape == (3000, 30)
 
 
-def test_correct_df_shape_channellist_anndata(data_anndata: AnnData,
-                                              detectors: list[str],
-                                              DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_correct_df_shape_channellist_anndata(
+    data_anndata: AnnData, detectors: list[str], DATAHANDLER_DEFAULT_KWARGS: dict
+):
     kwargs = DATAHANDLER_DEFAULT_KWARGS.copy()
     kwargs["channels"] = detectors[:30]
     dh = DataHandlerAnnData(data_anndata, **kwargs)
     assert dh.ref_data_df.shape == (3000, 30)
 
 
-def test_correct_channel_indices_markers_fcs(metadata: pd.DataFrame,
-                                             INPUT_DIR: Path):
-    dh = DataHandlerFCS(
-        metadata=metadata,
-        input_directory=INPUT_DIR,
-        channels="markers"
-    )
+def test_correct_channel_indices_markers_fcs(metadata: pd.DataFrame, INPUT_DIR: Path):
+    dh = DataHandlerFCS(metadata=metadata, input_directory=INPUT_DIR, channels="markers")
     # get raw fcs channels from the first file
     raw = dh._provider._reader.parse_fcs_df(metadata["file_name"].iloc[0])
     fcs_channels = raw.columns.tolist()
@@ -89,9 +77,7 @@ def test_correct_channel_indices_markers_anndata(datahandleranndata: DataHandler
     assert dh.ref_data_df.columns.tolist() == selected
 
 
-def test_correct_channel_indices_list_fcs(metadata: pd.DataFrame,
-                                          detectors: list[str],
-                                          INPUT_DIR: Path):
+def test_correct_channel_indices_list_fcs(metadata: pd.DataFrame, detectors: list[str], INPUT_DIR: Path):
     subset = detectors[:30]
     dh = DataHandlerFCS(
         metadata=metadata,
@@ -105,9 +91,9 @@ def test_correct_channel_indices_list_fcs(metadata: pd.DataFrame,
     assert dh.ref_data_df.columns.tolist() == selected
 
 
-def test_correct_channel_indices_list_anndata(data_anndata: AnnData,
-                                              detectors: list[str],
-                                              DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_correct_channel_indices_list_anndata(
+    data_anndata: AnnData, detectors: list[str], DATAHANDLER_DEFAULT_KWARGS: dict
+):
     subset = detectors[:30]
     kwargs = DATAHANDLER_DEFAULT_KWARGS.copy()
     kwargs["channels"] = subset
@@ -130,8 +116,7 @@ def test_ref_data_df_index_multiindex_anndata(datahandleranndata: DataHandlerAnn
     assert df.index.names == ["reference", "batch", "file_name"]
 
 
-def test_get_batch_anndata(datahandleranndata: DataHandlerAnnData,
-                           metadata: pd.DataFrame):
+def test_get_batch_anndata(datahandleranndata: DataHandlerAnnData, metadata: pd.DataFrame):
     dh = datahandleranndata
     fn = metadata["file_name"].iloc[0]
     expected = metadata.loc[metadata.file_name == fn, "batch"].iloc[0]
@@ -139,8 +124,7 @@ def test_get_batch_anndata(datahandleranndata: DataHandlerAnnData,
     assert str(got) == str(expected)
 
 
-def test_find_corresponding_reference_file_anndata(datahandleranndata: DataHandlerAnnData,
-                                                   metadata: pd.DataFrame):
+def test_find_corresponding_reference_file_anndata(datahandleranndata: DataHandlerAnnData, metadata: pd.DataFrame):
     dh = datahandleranndata
     fn = metadata["file_name"].iloc[1]
     batch = dh.metadata.get_batch(fn)
@@ -149,8 +133,7 @@ def test_find_corresponding_reference_file_anndata(datahandleranndata: DataHandl
     assert dh.metadata.get_corresponding_reference_file(fn) == corr
 
 
-def test_get_corresponding_ref_dataframe(datahandleranndata: DataHandlerAnnData,
-                                         metadata: pd.DataFrame):
+def test_get_corresponding_ref_dataframe(datahandleranndata: DataHandlerAnnData, metadata: pd.DataFrame):
     dh = datahandleranndata
     fn = metadata["file_name"].iloc[1]
     ref_df = dh.get_corresponding_ref_dataframe(fn)
@@ -158,10 +141,7 @@ def test_get_corresponding_ref_dataframe(datahandleranndata: DataHandlerAnnData,
     # reference file has same shape but different content
     assert ref_df.shape == sample_df.shape
     # first 14 rows differ
-    assert not np.allclose(
-        ref_df.iloc[:14].values,
-        sample_df.iloc[:14].values
-    )
+    assert not np.allclose(ref_df.iloc[:14].values, sample_df.iloc[:14].values)
 
 
 def test_get_ref_data_df_alias(datahandleranndata: DataHandlerAnnData):
@@ -188,8 +168,7 @@ def test_subsample_df_method(datahandleranndata: DataHandlerAnnData):
     assert sub.shape[0] == 300
 
 
-def test_artificial_ref_on_relabeled_batch_anndata(data_anndata: AnnData,
-                                                   DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_artificial_ref_on_relabeled_batch_anndata(data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict):
     # relabel so chosen batch has no true reference samples
     ad = data_anndata.copy()
     dh_kwargs = DATAHANDLER_DEFAULT_KWARGS.copy()
@@ -217,7 +196,7 @@ def test_artificial_ref_on_relabeled_batch_anndata(data_anndata: AnnData,
     # EXPECT: exactly n_cells_reference rows for that batch
     idx_batch = df.index.get_level_values(dh.metadata.batch_column)
     n_observed = (idx_batch == int(target)).sum()
-    assert n_observed == 500, (idx_batch)
+    assert n_observed == 500, idx_batch
 
     # EXPECT: sample‐identifier level all set to artificial label
     idx_samp = df.index.get_level_values(dh.metadata.sample_identifier_column)
@@ -227,8 +206,7 @@ def test_artificial_ref_on_relabeled_batch_anndata(data_anndata: AnnData,
     assert idx_samp.tolist().count(artificial) == 500
 
 
-def test_artificial_ref_on_relabeled_batch_fcs(metadata: pd.DataFrame,
-                                              INPUT_DIR: str):
+def test_artificial_ref_on_relabeled_batch_fcs(metadata: pd.DataFrame, INPUT_DIR: str):
     # relabel so chosen batch has no true reference samples
     md = metadata.copy()
     rc, rv, bc, sc = "reference", "ref", "batch", "file_name"
@@ -245,7 +223,7 @@ def test_artificial_ref_on_relabeled_batch_fcs(metadata: pd.DataFrame,
         reference_column=rc,
         reference_value=rv,
         batch_column=bc,
-        sample_identifier_column=sc
+        sample_identifier_column=sc,
     )
     df = dh.ref_data_df
 
@@ -266,6 +244,7 @@ def test_artificial_ref_on_relabeled_batch_fcs(metadata: pd.DataFrame,
     assert artificial in unique_vals
     assert idx_samp.tolist().count(artificial) == 500
 
+
 def test_find_marker_channels_excludes_technicals(datahandleranndata: DataHandlerAnnData):
     dh = datahandleranndata
     all_det = dh._all_detectors
@@ -274,10 +253,9 @@ def test_find_marker_channels_excludes_technicals(datahandleranndata: DataHandle
     assert not any(ch.lower() in tech for ch in markers)
 
 
-
-def test_add_file_fcs_updates_metadata_and_provider(metadata: pd.DataFrame,
-                                                    INPUT_DIR: Path,
-                                                    DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_add_file_fcs_updates_metadata_and_provider(
+    metadata: pd.DataFrame, INPUT_DIR: Path, DATAHANDLER_DEFAULT_KWARGS: dict
+):
     dh = DataHandlerFCS(
         metadata=metadata.copy(),
         input_directory=INPUT_DIR,
@@ -299,9 +277,7 @@ def test_add_file_anndata_updates_metadata_and_layer(datahandleranndata: DataHan
     assert dh._provider.metadata is dh.metadata
 
 
-def test_string_batch_conversion_fcs(metadata: pd.DataFrame,
-                                     INPUT_DIR: Path,
-                                     DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_string_batch_conversion_fcs(metadata: pd.DataFrame, INPUT_DIR: Path, DATAHANDLER_DEFAULT_KWARGS: dict):
     md = metadata.copy()
     md["batch"] = [f"batch_{b}" for b in md.batch]
     dh = DataHandlerFCS(
@@ -314,8 +290,7 @@ def test_string_batch_conversion_fcs(metadata: pd.DataFrame,
     assert is_numeric_dtype(new_md.metadata.batch)
 
 
-def test_string_batch_conversion_anndata(data_anndata: AnnData,
-                                         DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_string_batch_conversion_anndata(data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict):
     ad = data_anndata.copy()
     ad.obs["batch"] = [f"batch_{b}" for b in ad.obs.batch]
     kwargs = DATAHANDLER_DEFAULT_KWARGS.copy()
@@ -325,20 +300,25 @@ def test_string_batch_conversion_anndata(data_anndata: AnnData,
     assert is_numeric_dtype(new_md.metadata.batch)
 
 
-def test_marker_selection_filters_columns(datahandleranndata: DataHandlerAnnData,
-                                          detectors: list[str],
-                                          detector_subset: list[str],
-                                          DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_marker_selection_filters_columns(
+    datahandleranndata: DataHandlerAnnData,
+    detectors: list[str],
+    detector_subset: list[str],
+    DATAHANDLER_DEFAULT_KWARGS: dict,
+):
     dh = datahandleranndata
     # get only subset
     df = dh.get_ref_data_df(markers=detector_subset)
     assert df.shape[1] == len(detector_subset)
     assert dh.ref_data_df.shape[1] != len(detector_subset)
 
-def test_marker_selection_subsampled_filters_and_counts(datahandleranndata: DataHandlerAnnData,
-                                                        detectors: list[str],
-                                                        detector_subset: list[str],
-                                                        DATAHANDLER_DEFAULT_KWARGS: dict):
+
+def test_marker_selection_subsampled_filters_and_counts(
+    datahandleranndata: DataHandlerAnnData,
+    detectors: list[str],
+    detector_subset: list[str],
+    DATAHANDLER_DEFAULT_KWARGS: dict,
+):
     dh = datahandleranndata
     df = dh.get_ref_data_df_subsampled(markers=detector_subset, n=10)
     assert df.shape == (10, len(detector_subset))

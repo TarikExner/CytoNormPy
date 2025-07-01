@@ -6,8 +6,7 @@ import numpy as np
 from cytonormpy._dataset._dataset import DataHandlerAnnData
 
 
-def test_missing_colname(data_anndata: AnnData,
-                         DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_missing_colname(data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict):
     # dropping each required column in turn should KeyError
     for col in (
         DATAHANDLER_DEFAULT_KWARGS["reference_column"],
@@ -34,8 +33,7 @@ def test_create_ref_data_df(datahandleranndata: DataHandlerAnnData):
     assert df.shape[0] == 3000
 
 
-def test_condense_metadata(data_anndata: AnnData,
-                           datahandleranndata: DataHandlerAnnData):
+def test_condense_metadata(data_anndata: AnnData, datahandleranndata: DataHandlerAnnData):
     obs = data_anndata.obs
     dh = datahandleranndata
     rc = dh.metadata.reference_column
@@ -49,8 +47,7 @@ def test_condense_metadata(data_anndata: AnnData,
     assert df.shape == df.drop_duplicates().shape
 
 
-def test_get_dataframe(datahandleranndata: DataHandlerAnnData,
-                       metadata: pd.DataFrame):
+def test_get_dataframe(datahandleranndata: DataHandlerAnnData, metadata: pd.DataFrame):
     dh = datahandleranndata
     fn = metadata[dh.metadata.sample_identifier_column].iloc[0]
     df = dh.get_dataframe(fn)
@@ -58,14 +55,11 @@ def test_get_dataframe(datahandleranndata: DataHandlerAnnData,
     assert isinstance(df, pd.DataFrame)
     assert df.shape == (1000, len(dh.channels))
     # file_name, reference, batch should be index, not columns
-    for col in (dh.metadata.sample_identifier_column,
-                dh.metadata.reference_column,
-                dh.metadata.batch_column):
+    for col in (dh.metadata.sample_identifier_column, dh.metadata.reference_column, dh.metadata.batch_column):
         assert col not in df.columns
 
 
-def test_find_and_get_array_indices(datahandleranndata: DataHandlerAnnData,
-                                    metadata: pd.DataFrame):
+def test_find_and_get_array_indices(datahandleranndata: DataHandlerAnnData, metadata: pd.DataFrame):
     dh = datahandleranndata
     fn = metadata[dh.metadata.sample_identifier_column].iloc[0]
 
@@ -78,8 +72,7 @@ def test_find_and_get_array_indices(datahandleranndata: DataHandlerAnnData,
     pd.testing.assert_index_equal(recovered, obs_idxs)
 
 
-def test_write_anndata(datahandleranndata: DataHandlerAnnData,
-                       metadata: pd.DataFrame):
+def test_write_anndata(datahandleranndata: DataHandlerAnnData, metadata: pd.DataFrame):
     dh = datahandleranndata
     fn = metadata[dh.metadata.sample_identifier_column].iloc[0]
 
@@ -117,10 +110,12 @@ def test_get_ref_data_df_and_subsampled(datahandleranndata: DataHandlerAnnData):
         dh.get_ref_data_df_subsampled(n=10_000_000)
 
 
-def test_marker_selection(datahandleranndata: DataHandlerAnnData,
-                          detectors: list[str],
-                          detector_subset: list[str],
-                          DATAHANDLER_DEFAULT_KWARGS: dict):
+def test_marker_selection(
+    datahandleranndata: DataHandlerAnnData,
+    detectors: list[str],
+    detector_subset: list[str],
+    DATAHANDLER_DEFAULT_KWARGS: dict,
+):
     dh = datahandleranndata
 
     # default ref_data_df has all marker columns

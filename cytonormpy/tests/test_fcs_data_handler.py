@@ -7,8 +7,8 @@ from flowio import FlowData
 
 from cytonormpy._dataset._dataset import DataHandlerFCS
 
-def test_get_dataframe_fcs(datahandlerfcs: DataHandlerFCS,
-                           metadata: pd.DataFrame):
+
+def test_get_dataframe_fcs(datahandlerfcs: DataHandlerFCS, metadata: pd.DataFrame):
     fn = metadata["file_name"].iloc[0]
     df = datahandlerfcs.get_dataframe(fn)
     # Should be a 1000×53 DataFrame, indexed by (ref,batch,file_name)
@@ -18,9 +18,7 @@ def test_get_dataframe_fcs(datahandlerfcs: DataHandlerFCS,
     assert "file_name" not in df.columns
 
 
-def test_read_metadata_from_path_fcs(tmp_path,
-                                    metadata: pd.DataFrame,
-                                    INPUT_DIR: Path):
+def test_read_metadata_from_path_fcs(tmp_path, metadata: pd.DataFrame, INPUT_DIR: Path):
     # write CSV to disk, pass path into constructor
     fp = tmp_path / "meta.csv"
     metadata.to_csv(fp, index=False)
@@ -29,25 +27,20 @@ def test_read_metadata_from_path_fcs(tmp_path,
     pd.testing.assert_frame_equal(metadata, dh.metadata.metadata)
 
 
-def test_read_metadata_from_table_fcs(metadata: pd.DataFrame,
-                                      INPUT_DIR: Path):
+def test_read_metadata_from_table_fcs(metadata: pd.DataFrame, INPUT_DIR: Path):
     dh = DataHandlerFCS(metadata=metadata, input_directory=INPUT_DIR)
     pd.testing.assert_frame_equal(metadata, dh.metadata.metadata)
 
 
-def test_metadata_missing_colname_fcs(metadata: pd.DataFrame,
-                                      INPUT_DIR: Path):
+def test_metadata_missing_colname_fcs(metadata: pd.DataFrame, INPUT_DIR: Path):
     for col in ("reference", "file_name", "batch"):
         md = metadata.copy()
-        bad = md.drop(col, axis = 1)
+        bad = md.drop(col, axis=1)
         with pytest.raises(ValueError):
             _ = DataHandlerFCS(metadata=bad, input_directory=INPUT_DIR)
 
 
-def test_write_fcs(tmp_path,
-                   datahandlerfcs: DataHandlerFCS,
-                   metadata: pd.DataFrame,
-                   INPUT_DIR: Path):
+def test_write_fcs(tmp_path, datahandlerfcs: DataHandlerFCS, metadata: pd.DataFrame, INPUT_DIR: Path):
     dh = datahandlerfcs
     fn = metadata["file_name"].iloc[0]
     # read raw events
@@ -78,5 +71,3 @@ def test_write_fcs(tmp_path,
     assert orig.event_count == new.event_count
     assert orig.analysis == new.analysis
     assert orig.channels == new.channels
-
-
