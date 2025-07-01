@@ -186,4 +186,11 @@ class Metadata:
             for batch in batches_wo_reference
         }
 
+class MockMetadata(Metadata):
+
+    def __init__(self,
+                 sample_identifier_column: str) -> None:
+        self.sample_identifier_column = sample_identifier_column
+
+
    

@@ -1,7 +1,5 @@
 import numpy as np
 
-from typing import Optional
-
 from flowsom.models import FlowSOMEstimator
 from sklearn.cluster import KMeans as knnclassifier
 from sklearn.cluster import AffinityPropagation as affinitypropagationclassifier

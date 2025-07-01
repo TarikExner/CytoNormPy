@@ -53,7 +53,7 @@ def test_data_setup_fcs(INPUT_DIR,
         label in df.index.get_level_values("label").unique().tolist()
         for label in CELL_LABELS + ["all_cells"]
     )
-    assert df.shape[0] == len(cn._datahandler.validation_file_names)*2*(len(CELL_LABELS)+1)
+    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names)*2*(len(CELL_LABELS)+1)
 
 
 def test_data_setup_anndata(data_anndata):

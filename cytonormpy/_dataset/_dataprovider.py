@@ -296,7 +296,8 @@ class DataProviderAnnData(DataProvider):
         self.layer = layer
 
     def parse_raw_data(self,
-                       file_name: str) -> pd.DataFrame:
+                       file_name: Union[str, list[str]],
+                       sample_identifier_column: Optional[str] = None) -> pd.DataFrame:
         """\
         Parses the expression data stored in the anndata object by the
         sample identifier.
@@ -313,10 +314,14 @@ class DataProviderAnnData(DataProvider):
         of the specified file.
 
         """
+        if not isinstance(file_name, list):
+            files = [file_name]
+        else:
+            files = file_name
         return cast(
             pd.DataFrame,
             self.adata[
-                self.adata.obs[self.metadata.sample_identifier_column].isin([file_name]),
+                self.adata.obs[self.metadata.sample_identifier_column].isin(files),
                 :
             ].to_df(layer = self.layer)
         )

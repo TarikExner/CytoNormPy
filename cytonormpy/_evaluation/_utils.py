@@ -5,6 +5,7 @@ from typing import Union, Optional
 from anndata import AnnData
 
 from .._dataset._dataprovider import DataProviderFCS, DataProviderAnnData
+from .._dataset._metadata import Metadata, MockMetadata
 from .._transformation import Transformer
 
 def _prepare_data_fcs(input_directory: PathLike,
@@ -34,12 +35,13 @@ def _prepare_data_fcs(input_directory: PathLike,
 
 def _prepare_data_anndata(adata: AnnData,
                           file_list: Union[list[str], str],
-                          channels: Optional[Union[list[str], pd.Index]],
+                          channels: Optional[list[str]],
                           layer: str,
                           sample_identifier_column: str = "file_name",
                           cell_labels: Optional[str] = None,
                           transformer: Optional[Transformer] = None
                           ) -> tuple[pd.DataFrame, Union[list[str], pd.Index]]:
+    
 
     df = _parse_anndata_dfs(
         adata = adata,
@@ -66,14 +68,15 @@ def _parse_anndata_dfs(adata: AnnData,
                        cell_labels: Optional[str],
                        transformer: Optional[Transformer],
                        channels: Optional[list[str]] = None):
+    metadata = MockMetadata(sample_identifier_column)
     provider = DataProviderAnnData(
         adata = adata,
         layer = layer,
-        sample_identifier_column = sample_identifier_column,
         channels = channels,
+        metadata = metadata,
         transformer = transformer
     )
-    df = provider.parse_anndata_df(file_list)
+    df = provider.parse_raw_data(file_list)
     df = provider.select_channels(df)
     df = provider.transform_data(df)
     df[sample_identifier_column] = adata.obs.loc[
@@ -97,16 +100,17 @@ def _parse_fcs_dfs(input_directory,
                    truncate_max_range: bool = False,
                    transformer: Optional[Transformer] = None) -> pd.DataFrame:
 
+    metadata = MockMetadata("file_name")
     provider = DataProviderFCS(
         input_directory = input_directory,
         truncate_max_range = truncate_max_range,
-        sample_identifier_column = "file_name",
         channels = channels,
+        metadata = metadata,
         transformer = transformer
     )
     dfs = []
     for file in file_list:
-        data = provider._reader.parse_fcs_df(file)
+        data = provider.parse_raw_data(file)
         data = provider.select_channels(data)
         data = provider.transform_data(data)
         data = provider._annotate_sample_identifier(data, file)
