@@ -32,7 +32,9 @@ def example_anndata() -> AnnData:
         obs = np.repeat(md_row, events.shape[0], axis=0)
         var_frame = fcs.channels
         obs_frame = pd.DataFrame(
-            data=obs, columns=metadata.columns, index=pd.Index([str(i) for i in range(events.shape[0])])
+            data=obs,
+            columns=metadata.columns,
+            index=pd.Index([str(i) for i in range(events.shape[0])]),
         )
         adata = ad.AnnData(obs=obs_frame, var=var_frame, layers={"compensated": events})
         adata.obs_names_make_unique()
@@ -58,7 +60,9 @@ def example_cytonorm(use_clustering: bool = False):
     tmp_dir = tempfile.mkdtemp()
     data_dir = Path(__file__).parent.parent
     metadata = pd.read_csv(os.path.join(data_dir, "_resources/metadata_sid.csv"))
-    channels = pd.read_csv(os.path.join(data_dir, "_resources/coding_detectors.txt"), header=None)[0].tolist()
+    channels = pd.read_csv(os.path.join(data_dir, "_resources/coding_detectors.txt"), header=None)[
+        0
+    ].tolist()
     original_files = metadata.loc[metadata["reference"] == "other", "file_name"].to_list()
     normalized_files = ["Norm_" + file_name for file_name in original_files]
     cell_labels = {file: _generate_cell_labels(1000) for file in original_files + normalized_files}

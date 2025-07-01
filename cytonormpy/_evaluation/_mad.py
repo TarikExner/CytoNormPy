@@ -8,7 +8,14 @@ from .._transformation import Transformer
 from ._mad_utils import _calculate_mads_per_frame
 from ._utils import _annotate_origin, _prepare_data_fcs, _prepare_data_anndata
 
-ALLOWED_GROUPINGS_FCS = ["file_name", ["file_name"], "label", ["label"], ["file_name", "label"], ["label", "file_name"]]
+ALLOWED_GROUPINGS_FCS = [
+    "file_name",
+    ["file_name"],
+    "label",
+    ["label"],
+    ["file_name", "label"],
+    ["label", "file_name"],
+]
 
 
 def mad_comparison_from_anndata(
@@ -249,7 +256,9 @@ def mad_from_fcs(
         groupby = "file_name"
 
     if groupby not in ALLOWED_GROUPINGS_FCS:
-        raise ValueError(f"Groupby has to be one of {ALLOWED_GROUPINGS_FCS} " + f"but was {groupby}.")
+        raise ValueError(
+            f"Groupby has to be one of {ALLOWED_GROUPINGS_FCS} " + f"but was {groupby}."
+        )
 
     if not isinstance(groupby, list):
         groupby = [groupby]

@@ -40,7 +40,9 @@ def test_metadata_missing_colname_fcs(metadata: pd.DataFrame, INPUT_DIR: Path):
             _ = DataHandlerFCS(metadata=bad, input_directory=INPUT_DIR)
 
 
-def test_write_fcs(tmp_path, datahandlerfcs: DataHandlerFCS, metadata: pd.DataFrame, INPUT_DIR: Path):
+def test_write_fcs(
+    tmp_path, datahandlerfcs: DataHandlerFCS, metadata: pd.DataFrame, INPUT_DIR: Path
+):
     dh = datahandlerfcs
     fn = metadata["file_name"].iloc[0]
     # read raw events

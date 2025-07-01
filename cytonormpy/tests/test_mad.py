@@ -15,7 +15,9 @@ def test_data_setup_fcs(INPUT_DIR, metadata: pd.DataFrame, tmpdir):
     cn = cnp.CytoNorm()
     t = cnp.AsinhTransformer()
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=tmpdir)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=tmpdir
+    )
     cn.calculate_quantiles()
     cn.calculate_splines()
     cn.normalize_data()
@@ -44,8 +46,13 @@ def test_data_setup_fcs(INPUT_DIR, metadata: pd.DataFrame, tmpdir):
     df = cn.mad_frame
     assert all(ch in df.columns for ch in cn._datahandler.channels)
     assert all(entry in df.index.names for entry in ["file_name", "origin", "label"])
-    assert all(label in df.index.get_level_values("label").unique().tolist() for label in CELL_LABELS + ["all_cells"])
-    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names) * 2 * (len(CELL_LABELS) + 1)
+    assert all(
+        label in df.index.get_level_values("label").unique().tolist()
+        for label in CELL_LABELS + ["all_cells"]
+    )
+    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names) * 2 * (
+        len(CELL_LABELS) + 1
+    )
 
 
 def test_data_setup_anndata(data_anndata):
@@ -76,8 +83,13 @@ def test_data_setup_anndata(data_anndata):
     df = cn.mad_frame
     assert all(ch in df.columns for ch in cn._datahandler.channels)
     assert all(entry in df.index.names for entry in ["file_name", "origin", "label"])
-    assert all(label in df.index.get_level_values("label").unique().tolist() for label in CELL_LABELS + ["all_cells"])
-    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names) * 2 * (len(CELL_LABELS) + 1)
+    assert all(
+        label in df.index.get_level_values("label").unique().tolist()
+        for label in CELL_LABELS + ["all_cells"]
+    )
+    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names) * 2 * (
+        len(CELL_LABELS) + 1
+    )
 
 
 def test_r_python_mad():

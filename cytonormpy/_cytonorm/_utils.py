@@ -9,7 +9,9 @@ class ClusterCVWarning(Warning):
         return repr(self.message)
 
 
-def _all_cvs_below_cutoff(df: pd.DataFrame, cluster_key: str, sample_key: str, cv_cutoff: float) -> bool:
+def _all_cvs_below_cutoff(
+    df: pd.DataFrame, cluster_key: str, sample_key: str, cv_cutoff: float
+) -> bool:
     """\
     Calculates the CVs of sample_ID percentages per cluster.
     Then, tests if any of the CVs are larger than the cutoff.
@@ -39,5 +41,7 @@ def _calculate_cluster_cv(df: pd.DataFrame, cluster_key: str, sample_key) -> lis
     value_counts = df.groupby(cluster_key, observed=True).value_counts([sample_key])
     sample_sizes = df.groupby(sample_key, observed=True).size()
     percentages = pd.DataFrame(value_counts / sample_sizes, columns=["perc"])
-    cluster_by_sample = percentages.pivot_table(values="perc", index=sample_key, columns=cluster_key)
+    cluster_by_sample = percentages.pivot_table(
+        values="perc", index=sample_key, columns=cluster_key
+    )
     return list(cluster_by_sample.std() / cluster_by_sample.mean())

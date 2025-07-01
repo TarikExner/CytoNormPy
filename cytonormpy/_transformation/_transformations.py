@@ -2,7 +2,14 @@ from abc import abstractmethod, ABC
 import numpy as np
 from typing import Optional, Union
 
-from flowutils.transforms import logicle, logicle_inverse, hyperlog, hyperlog_inverse, log, log_inverse
+from flowutils.transforms import (
+    logicle,
+    logicle_inverse,
+    hyperlog,
+    hyperlog_inverse,
+    log,
+    log_inverse,
+)
 
 
 class Transformer(ABC):
@@ -91,7 +98,9 @@ class LogicleTransformer(Transformer):
         :class:`~numpy.ndarray`
 
         """
-        return logicle(data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a)
+        return logicle(
+            data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a
+        )
 
     def inverse_transform(self, data: np.ndarray) -> np.ndarray:
         """\
@@ -108,7 +117,9 @@ class LogicleTransformer(Transformer):
         -------
         :class:`~numpy.ndarray`
         """
-        return logicle_inverse(data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a)
+        return logicle_inverse(
+            data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a
+        )
 
 
 class HyperLogTransformer(Transformer):
@@ -171,7 +182,9 @@ class HyperLogTransformer(Transformer):
         :class:`~numpy.ndarray`
 
         """
-        return hyperlog(data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a)
+        return hyperlog(
+            data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a
+        )
 
     def inverse_transform(self, data: np.ndarray) -> np.ndarray:
         """\
@@ -188,7 +201,9 @@ class HyperLogTransformer(Transformer):
         -------
         :class:`~numpy.ndarray`
         """
-        return hyperlog_inverse(data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a)
+        return hyperlog_inverse(
+            data=data, channel_indices=self.channel_indices, t=self.t, m=self.m, w=self.w, a=self.a
+        )
 
 
 class LogTransformer(Transformer):

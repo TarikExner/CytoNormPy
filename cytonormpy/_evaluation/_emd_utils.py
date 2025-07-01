@@ -7,7 +7,9 @@ from itertools import combinations
 from typing import Union, Iterable
 
 
-def _bin_array(values: list[float], hist_min: float, hist_max: float, bin_size: float) -> tuple[Iterable, np.ndarray]:
+def _bin_array(
+    values: list[float], hist_min: float, hist_max: float, bin_size: float
+) -> tuple[Iterable, np.ndarray]:
     """
     Bins the input arrays into bins with a size of 0.1.
 
@@ -91,7 +93,9 @@ def _calculate_wasserstein_distance(group_pair: tuple[list[float], ...]) -> floa
         hist_max=global_max + 1,  # we extend slightly to cover all bins
         bin_size=bin_size,
     )
-    v_values, v_weights = _bin_array(group_pair[1], hist_min=global_min - 1, hist_max=global_max + 1, bin_size=bin_size)
+    v_values, v_weights = _bin_array(
+        group_pair[1], hist_min=global_min - 1, hist_max=global_max + 1, bin_size=bin_size
+    )
 
     emd = wasserstein_distance(u_values, v_values, u_weights, v_weights)
 
@@ -164,16 +168,22 @@ def _wasserstein_per_label(label_group, channels) -> pd.Series:
     return pd.Series(max_dists)
 
 
-def _calculate_emd_per_frame(df: pd.DataFrame, channels: Union[list[str], pd.Index]) -> pd.DataFrame:
+def _calculate_emd_per_frame(
+    df: pd.DataFrame, channels: Union[list[str], pd.Index]
+) -> pd.DataFrame:
     assert all(level in df.index.names for level in ["file_name", "label"])
     n_labels = df.index.get_level_values("label").nunique()
 
-    res = df.groupby("label").apply(lambda label_group: _wasserstein_per_label(label_group, channels))
+    res = df.groupby("label").apply(
+        lambda label_group: _wasserstein_per_label(label_group, channels)
+    )
     if n_labels > 1:
         df = df.reset_index(level="label")
         df["label"] = "all_cells"
         df = df.set_index("label", append=True, drop=True)
-        all_cells = df.groupby("label").apply(lambda label_group: _wasserstein_per_label(label_group, channels))
+        all_cells = df.groupby("label").apply(
+            lambda label_group: _wasserstein_per_label(label_group, channels)
+        )
 
         res = pd.concat([all_cells, res], axis=0)
 

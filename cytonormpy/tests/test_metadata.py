@@ -35,7 +35,9 @@ def test_get_ref_and_batch_and_corresponding(metadata: pd.DataFrame):
     assert m.get_ref_value(val_file) == "other"
     b = m.get_batch(val_file)
     corr = m.get_corresponding_reference_file(val_file)
-    same_batch_refs = metadata.loc[(metadata.batch == b) & (metadata.reference == "ref"), "file_name"].tolist()
+    same_batch_refs = metadata.loc[
+        (metadata.batch == b) & (metadata.reference == "ref"), "file_name"
+    ].tolist()
     assert corr in same_batch_refs
 
 
@@ -55,7 +57,9 @@ def test_validate_metadata_table_missing_column(metadata: pd.DataFrame):
 def test_validate_metadata_table_inconclusive_reference(metadata: pd.DataFrame):
     bad = metadata.copy()
     bad.loc[0, "reference"] = "third"
-    msg = "The column reference must only contain descriptive values for references and other values"
+    msg = (
+        "The column reference must only contain descriptive values for references and other values"
+    )
     with pytest.raises(ValueError, match=re.escape(msg)):
         Metadata(bad, "reference", "ref", "batch", "file_name")
 
@@ -221,16 +225,18 @@ def test_update_refreshes_all_lists_and_dict(metadata: pd.DataFrame):
     m = Metadata(md, "reference", "ref", "batch", "file_name")
 
     # manually strip all ref from batch 3
-    m.metadata = m.metadata.loc[~((m.metadata["batch"] == 3) & (m.metadata["reference"] == "ref"))].reset_index(
-        drop=True
-    )
+    m.metadata = m.metadata.loc[
+        ~((m.metadata["batch"] == 3) & (m.metadata["reference"] == "ref"))
+    ].reset_index(drop=True)
     # now re‐run update()
     m.update()
 
     # batch 3 should now be flagged missing
     assert m.reference_construction_needed is True
     # lists refreshed
-    assert 3 not in [b for b, grp in m.metadata.groupby("batch") if "ref" in grp["reference"].values]
+    assert 3 not in [
+        b for b, grp in m.metadata.groupby("batch") if "ref" in grp["reference"].values
+    ]
     # dict entry for 3
     assert 3 in m.reference_assembly_dict
     assert set(m.reference_assembly_dict[3]) == set(m.get_files_per_batch(3))

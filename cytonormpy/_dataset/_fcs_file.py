@@ -25,7 +25,9 @@ class FCSFile:
     ) -> None:
         self.original_filename = file_name
 
-        raw_data = self._load_fcs_file_from_disk(input_directory, file_name, ignore_offset_error=False)
+        raw_data = self._load_fcs_file_from_disk(
+            input_directory, file_name, ignore_offset_error=False
+        )
 
         self.compensation_status = "uncompensated"
         self.transform_status = "untransformed"
@@ -35,7 +37,9 @@ class FCSFile:
         self.version = self._parse_fcs_version(raw_data)
         self.fcs_metadata = self._parse_fcs_metadata(raw_data)
         self.channels = self._parse_channel_information(raw_data)
-        self.original_events = self._parse_and_process_original_events(raw_data, subsample, truncate_max_range)
+        self.original_events = self._parse_and_process_original_events(
+            raw_data, subsample, truncate_max_range
+        )
         self.event_count = self.original_events.shape[0]
 
     def __repr__(self) -> str:
@@ -52,7 +56,9 @@ class FCSFile:
 
     def to_df(self) -> pd.DataFrame:
         return pd.DataFrame(
-            data=self.original_events, index=pd.Index(list(range(self.event_count))), columns=self.channels.index
+            data=self.original_events,
+            index=pd.Index(list(range(self.event_count))),
+            columns=self.channels.index,
         )
 
     def get_events(self, source: str = "raw") -> Optional[np.ndarray]:
@@ -71,7 +77,9 @@ class FCSFile:
         performs a lookup in the channels dataframe and
         returns the channel index by the fcs file channel numbers
         """
-        return self.channels.loc[self.channels.index == channel_label, "channel_numbers"].iloc[0] - 1
+        return (
+            self.channels.loc[self.channels.index == channel_label, "channel_numbers"].iloc[0] - 1
+        )
 
     def _parse_event_count(self, fcs_data: FlowData) -> int:
         """returns the total event count"""
@@ -94,7 +102,9 @@ class FCSFile:
         tmp_orig_events = self._process_original_events(tmp_orig_events, truncate_max_range)
         return tmp_orig_events
 
-    def _process_original_events(self, tmp_orig_events: np.ndarray, truncate_max_range: bool) -> np.ndarray:
+    def _process_original_events(
+        self, tmp_orig_events: np.ndarray, truncate_max_range: bool
+    ) -> np.ndarray:
         """
         processes the original events by convolving the channel gains
         the decades and the time channel
@@ -133,9 +143,7 @@ class FCSFile:
         if np.isnan(arr).any():
             idxs = np.argwhere(np.isnan(arr))[:, 0]
             arr = arr[~np.in1d(np.arange(arr.shape[0]), idxs)]
-            warning_message = (
-                f"{idxs.shape[0]} cells were removed from {self.original_filename} due to the presence of NaN values"
-            )
+            warning_message = f"{idxs.shape[0]} cells were removed from {self.original_filename} due to the presence of NaN values"
             NaNRemovalWarning(warning_message)
         return arr
 
@@ -169,7 +177,14 @@ class FCSFile:
             time_step = float(self.fcs_metadata["timestep"])
         else:
             time_step = 1.0
-        time_index = int(self.channels.loc[self.channels.index.isin(["Time", "time"]), "channel_numbers"].iloc[0]) - 1
+        time_index = (
+            int(
+                self.channels.loc[
+                    self.channels.index.isin(["Time", "time"]), "channel_numbers"
+                ].iloc[0]
+            )
+            - 1
+        )
         return (time_index, time_step)
 
     def _time_channel_exists(self) -> bool:
@@ -178,7 +193,9 @@ class FCSFile:
 
     def _parse_original_events(self, fcs_data: FlowData) -> np.ndarray:
         """function to parse the original events from the fcs file"""
-        return np.array(fcs_data.events, dtype=np.float64, order="C").reshape(-1, fcs_data.channel_count)
+        return np.array(fcs_data.events, dtype=np.float64, order="C").reshape(
+            -1, fcs_data.channel_count
+        )
 
     def _remove_disallowed_characters_from_string(self, input_string: str) -> str:
         """function to remove disallowed characters from the string"""
@@ -193,10 +210,16 @@ class FCSFile:
         fcs file and returns a dataframe
         """
         channels: dict = fcs_data.channels
-        pnn_labels = [self._parse_pnn_label(channels, channel_number) for channel_number in channels]
-        pns_labels = [self._parse_pns_label(channels, channel_number) for channel_number in channels]
+        pnn_labels = [
+            self._parse_pnn_label(channels, channel_number) for channel_number in channels
+        ]
+        pns_labels = [
+            self._parse_pns_label(channels, channel_number) for channel_number in channels
+        ]
         channel_gains = [self._parse_channel_gain(channel_number) for channel_number in channels]
-        channel_lin_log = [self._parse_channel_lin_log(channel_number) for channel_number in channels]
+        channel_lin_log = [
+            self._parse_channel_lin_log(channel_number) for channel_number in channels
+        ]
         channel_ranges = [self._parse_channel_range(channel_number) for channel_number in channels]
 
         channel_numbers = [int(k) for k in channels]
@@ -244,7 +267,9 @@ class FCSFile:
     def _parse_channel_lin_log(self, channel_number: str) -> tuple[float, float]:
         """parses the channel lin log from the fcs file"""
         try:
-            (decades, log0) = [float(x) for x in self.fcs_metadata[f"p{channel_number}e"].split(",")]
+            (decades, log0) = [
+                float(x) for x in self.fcs_metadata[f"p{channel_number}e"].split(",")
+            ]
             if log0 == 0.0 and decades != 0:
                 log0 = 1.0  # FCS std states to use 1.0 for invalid 0 value
             return (decades, log0)
@@ -305,7 +330,9 @@ class TruncationWarning(Warning):
             + "following counts were outside the channel range: "
         )
         channel_count_mapping = [
-            f"{ch}: {count}" for ch, count in zip(exceeded_channels, number_exceeded_cells) if count != 0
+            f"{ch}: {count}"
+            for ch, count in zip(exceeded_channels, number_exceeded_cells)
+            if count != 0
         ]
         self.message += f"{', '.join(channel_count_mapping)}"
         warnings.warn(self.message, UserWarning)

@@ -1,7 +1,9 @@
 import numpy as np
 from numba import njit, float64, float32
 
-njit([float32[:, :](float32[:, :], float32[:]), float64[:, :](float64[:, :], float64[:])], cache=True)
+njit(
+    [float32[:, :](float32[:, :], float32[:]), float64[:, :](float64[:, :], float64[:])], cache=True
+)
 
 
 def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
@@ -43,7 +45,9 @@ def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
             else:
                 lower_value = sorted_col[lower_index]
                 upper_value = sorted_col[upper_index]
-                quantiles[i, col] = lower_value + (upper_value - lower_value) * (position - lower_index)
+                quantiles[i, col] = lower_value + (upper_value - lower_value) * (
+                    position - lower_index
+                )
 
     return quantiles
 

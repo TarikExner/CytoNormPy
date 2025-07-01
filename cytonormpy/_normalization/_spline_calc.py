@@ -124,7 +124,9 @@ class Spline:
             current_distribution = self._append_limits(current_distribution)
             goal_distribution = self._append_limits(goal_distribution)
 
-            current_distribution, goal_distribution = regularize_values(current_distribution, goal_distribution)
+            current_distribution, goal_distribution = regularize_values(
+                current_distribution, goal_distribution
+            )
 
             m = self._select_interpolants(current_distribution, goal_distribution)
             self.fit_func: PPoly = self.spline_calc_function(
@@ -188,12 +190,18 @@ class Splines:
     """
 
     def __init__(
-        self, batches: list[Union[float, str]], clusters: list[Union[float, str]], channels: list[Union[float, str]]
+        self,
+        batches: list[Union[float, str]],
+        clusters: list[Union[float, str]],
+        channels: list[Union[float, str]],
     ) -> None:
         self._init_dictionary(batches, clusters, channels)
 
     def _init_dictionary(
-        self, batches: list[Union[float, str]], clusters: list[Union[float, str]], channels: list[Union[float, str]]
+        self,
+        batches: list[Union[float, str]],
+        clusters: list[Union[float, str]],
+        channels: list[Union[float, str]],
     ) -> None:
         """\
         Instantiates the dictionary.
@@ -213,7 +221,8 @@ class Splines:
 
         """
         self._splines: dict = {
-            batch: {cluster: {channel: None for channel in channels} for cluster in clusters} for batch in batches
+            batch: {cluster: {channel: None for channel in channels} for cluster in clusters}
+            for batch in batches
         }
 
     def add_spline(self, spline: Spline) -> None:
@@ -237,7 +246,9 @@ class Splines:
         channel = spline.channel
         self._splines[batch][cluster][channel] = spline
 
-    def remove_spline(self, batch: Union[float, str], cluster: Union[float, str], channel: Union[float, str]) -> None:
+    def remove_spline(
+        self, batch: Union[float, str], cluster: Union[float, str], channel: Union[float, str]
+    ) -> None:
         """\
         Deletes the spline function according to from the dict
         according to batch, cluster and channel.
@@ -258,7 +269,9 @@ class Splines:
         """
         del self._splines[batch][cluster][channel]
 
-    def get_spline(self, batch: Union[float, str], cluster: Union[float, str], channel: str) -> Spline:
+    def get_spline(
+        self, batch: Union[float, str], cluster: Union[float, str], channel: str
+    ) -> Spline:
         """\
         Returns the correct spline function according to
         batch, cluster and channel.

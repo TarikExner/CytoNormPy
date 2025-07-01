@@ -23,7 +23,9 @@ def _calculate_mads_per_frame(
         return _mad_per_group(df, channels=channels, groupby=groupby)
 
 
-def _mad_per_group(df: pd.DataFrame, channels: Union[list[str], pd.Index], groupby: list[str]) -> pd.DataFrame:
+def _mad_per_group(
+    df: pd.DataFrame, channels: Union[list[str], pd.Index], groupby: list[str]
+) -> pd.DataFrame:
     """\
     Function to evaluate the Median Absolute Deviation on a dataframe.
     This function is not really meant to be used from outside, but

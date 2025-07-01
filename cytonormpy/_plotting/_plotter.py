@@ -116,7 +116,12 @@ class Plotter:
 
         if grid is not None:
             fig, ax = self._generate_scatter_grid(
-                df=df, colorby=colorby, grid_by=grid, grid_n_cols=grid_n_cols, figsize=figsize, **kwargs
+                df=df,
+                colorby=colorby,
+                grid_by=grid,
+                grid_n_cols=grid_n_cols,
+                figsize=figsize,
+                **kwargs,
             )
             ax_shape = ax.shape
             ax = ax.flatten()
@@ -237,7 +242,9 @@ class Plotter:
         else:
             mad_frame = data
 
-        df = self._prepare_evaluation_frame(dataframe=mad_frame, file_name=file_name, channels=channels, labels=labels)
+        df = self._prepare_evaluation_frame(
+            dataframe=mad_frame, file_name=file_name, channels=channels, labels=labels
+        )
         df["change"] = (df["original"] - df["normalized"]) < 0
         df["change"] = df["change"].map({False: "decreased", True: "increased"})
 
@@ -245,7 +252,12 @@ class Plotter:
 
         if grid is not None:
             fig, ax = self._generate_scatter_grid(
-                df=df, colorby=colorby, grid_by=grid, grid_n_cols=grid_n_cols, figsize=figsize, **kwargs
+                df=df,
+                colorby=colorby,
+                grid_by=grid,
+                grid_n_cols=grid_n_cols,
+                figsize=figsize,
+                **kwargs,
             )
             ax_shape = ax.shape
             ax = ax.flatten()
@@ -384,23 +396,40 @@ class Plotter:
         hues = data.index.get_level_values("origin").unique().sort_values()
         if grid is not None:
             assert grid == "channels"
-            n_cols, n_rows, figsize = self._get_grid_sizes_channels(df=data, grid_n_cols=grid_n_cols, figsize=figsize)
+            n_cols, n_rows, figsize = self._get_grid_sizes_channels(
+                df=data, grid_n_cols=grid_n_cols, figsize=figsize
+            )
 
             # calculate it to remove empty axes later
             total_plots = n_cols * n_rows
 
             ax: NDArrayOfAxes
-            fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=False, sharey=False)
+            fig, ax = plt.subplots(
+                ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=False, sharey=False
+            )
             ax = ax.flatten()
             i = 0
 
             assert ax is not None
 
             for i, grid_param in enumerate(data.columns):
-                plot_kwargs = {"data": data, "hue": "origin", "hue_order": hues, "x": grid_param, "ax": ax[i]}
+                plot_kwargs = {
+                    "data": data,
+                    "hue": "origin",
+                    "hue_order": hues,
+                    "x": grid_param,
+                    "ax": ax[i],
+                }
                 ax[i] = sns.kdeplot(**plot_kwargs, **kde_kwargs, **kwargs)
 
-                self._handle_axis(ax=ax[i], x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
+                self._handle_axis(
+                    ax=ax[i],
+                    x_scale=x_scale,
+                    y_scale=y_scale,
+                    xlim=xlim,
+                    ylim=ylim,
+                    linthresh=linthresh,
+                )
                 legend = ax[i].legend_
                 handles = legend.legend_handles
                 labels = [t.get_text() for t in legend.get_texts()]
@@ -414,10 +443,18 @@ class Plotter:
 
             ax = ax.reshape(n_cols, n_rows)
 
-            fig.legend(handles, labels, bbox_to_anchor=(1.01, 0.5), loc="center left", title="origin")
+            fig.legend(
+                handles, labels, bbox_to_anchor=(1.01, 0.5), loc="center left", title="origin"
+            )
 
         else:
-            plot_kwargs = {"data": data, "hue": "origin", "hue_order": hues, "x": x_channel, "ax": ax}
+            plot_kwargs = {
+                "data": data,
+                "hue": "origin",
+                "hue_order": hues,
+                "x": x_channel,
+                "ax": ax,
+            }
             if ax is None:
                 if figsize is None:
                     figsize = (2, 2)
@@ -431,7 +468,9 @@ class Plotter:
 
             sns.move_legend(ax, bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-            self._handle_axis(ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
+            self._handle_axis(
+                ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh
+            )
 
         return self._save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
 
@@ -540,13 +579,22 @@ class Plotter:
         assert ax is not None
 
         hues = data.index.get_level_values("origin").unique().sort_values()
-        plot_kwargs = {"data": data, "hue": "origin", "hue_order": hues, "x": x_channel, "y": y_channel, "ax": ax}
+        plot_kwargs = {
+            "data": data,
+            "hue": "origin",
+            "hue_order": hues,
+            "x": x_channel,
+            "y": y_channel,
+            "ax": ax,
+        }
 
         kwargs = self._scatter_defaults(kwargs)
 
         sns.scatterplot(**plot_kwargs, **kwargs)
 
-        self._handle_axis(ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
+        self._handle_axis(
+            ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh
+        )
 
         self._handle_legend(ax=ax, legend_labels=legend_labels)
 
@@ -643,19 +691,28 @@ class Plotter:
         ch_idx = channels.index(channel)
         channel_quantiles = np.nanmean(
             expr_quantiles.get_quantiles(
-                channel_idx=ch_idx, batch_idx=batch_idx, cluster_idx=None, quantile_idx=None, flattened=False
+                channel_idx=ch_idx,
+                batch_idx=batch_idx,
+                cluster_idx=None,
+                quantile_idx=None,
+                flattened=False,
             ),
             axis=expr_quantiles._cluster_axis,
         )
 
         goal_quantiles = np.nanmean(
             self.cnp._goal_distrib.get_quantiles(
-                channel_idx=ch_idx, batch_idx=None, cluster_idx=None, quantile_idx=None, flattened=False
+                channel_idx=ch_idx,
+                batch_idx=None,
+                cluster_idx=None,
+                quantile_idx=None,
+                flattened=False,
             ),
             axis=expr_quantiles._cluster_axis,
         )
         df = pd.DataFrame(
-            data={"original": channel_quantiles.flatten(), "goal": goal_quantiles.flatten()}, index=quantiles.flatten()
+            data={"original": channel_quantiles.flatten(), "goal": goal_quantiles.flatten()},
+            index=quantiles.flatten(),
         )
 
         if ax is None:
@@ -667,7 +724,9 @@ class Plotter:
 
         sns.lineplot(data=df, x="original", y="goal", ax=ax, **kwargs)
         ax.set_title(channel)
-        self._handle_axis(ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh)
+        self._handle_axis(
+            ax=ax, x_scale=x_scale, y_scale=y_scale, xlim=xlim, ylim=ylim, linthresh=linthresh
+        )
 
         ylims = ax.get_ylim()
         xlims = ax.get_xlim()
@@ -749,7 +808,11 @@ class Plotter:
         return n_cols, n_rows, figsize
 
     def _get_grid_sizes(
-        self, df: pd.DataFrame, grid_by: str, grid_n_cols: Optional[int], figsize: Optional[tuple[float, float]]
+        self,
+        df: pd.DataFrame,
+        grid_by: str,
+        grid_n_cols: Optional[int],
+        figsize: Optional[tuple[float, float]],
     ) -> tuple:
         n_plots = df[grid_by].nunique()
         if grid_n_cols is None:
@@ -773,7 +836,9 @@ class Plotter:
         colorby: Optional[str],
         **scatter_kwargs: Optional[dict],
     ) -> tuple[Figure, NDArrayOfAxes]:
-        n_cols, n_rows, figsize = self._get_grid_sizes(df=df, grid_by=grid_by, grid_n_cols=grid_n_cols, figsize=figsize)
+        n_cols, n_rows, figsize = self._get_grid_sizes(
+            df=df, grid_by=grid_by, grid_n_cols=grid_n_cols, figsize=figsize
+        )
 
         # calculate it to remove empty axes later
         total_plots = n_cols * n_rows
@@ -781,12 +846,16 @@ class Plotter:
         hue = None if colorby == grid_by else colorby
         plot_params = {"x": "normalized", "y": "original", "hue": hue}
 
-        fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=True, sharey=True)
+        fig, ax = plt.subplots(
+            ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=True, sharey=True
+        )
         ax = ax.flatten()
         i = 0
 
         for i, grid_param in enumerate(df[grid_by].unique()):
-            sns.scatterplot(data=df[df[grid_by] == grid_param], **plot_params, **scatter_kwargs, ax=ax[i])
+            sns.scatterplot(
+                data=df[df[grid_by] == grid_param], **plot_params, **scatter_kwargs, ax=ax[i]
+            )
             ax[i].set_title(grid_param)
             if hue is not None:
                 handles, labels = ax[i].get_legend_handles_labels()
@@ -800,7 +869,9 @@ class Plotter:
         ax = ax.reshape(n_cols, n_rows)
 
         if hue is not None:
-            fig.legend(handles, labels, bbox_to_anchor=(1.01, 0.5), loc="center left", title=colorby)
+            fig.legend(
+                handles, labels, bbox_to_anchor=(1.01, 0.5), loc="center left", title=colorby
+            )
 
         return fig, ax
 
@@ -906,8 +977,12 @@ class Plotter:
         ylim: Optional[tuple[float, float]],
     ) -> None:
         # Axis scale
-        x_scale_kwargs: dict[str, Optional[Union[float, str]]] = {"value": x_scale if x_scale != "biex" else "symlog"}
-        y_scale_kwargs: dict[str, Optional[Union[float, str]]] = {"value": y_scale if y_scale != "biex" else "symlog"}
+        x_scale_kwargs: dict[str, Optional[Union[float, str]]] = {
+            "value": x_scale if x_scale != "biex" else "symlog"
+        }
+        y_scale_kwargs: dict[str, Optional[Union[float, str]]] = {
+            "value": y_scale if y_scale != "biex" else "symlog"
+        }
 
         if x_scale == "biex":
             x_scale_kwargs["linthresh"] = linthresh

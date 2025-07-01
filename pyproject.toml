@@ -52,7 +52,7 @@ test = [
 allow-direct-references = true
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 target-version = "py311"
 fix = true
 

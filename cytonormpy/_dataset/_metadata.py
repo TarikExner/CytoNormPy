@@ -30,7 +30,13 @@ class Metadata:
 
         try:
             self.validation_value = list(
-                set([val for val in self.metadata[self.reference_column] if val != self.reference_value])
+                set(
+                    [
+                        val
+                        for val in self.metadata[self.reference_column]
+                        if val != self.reference_value
+                    ]
+                )
             )[0]
         except IndexError:  # means we only have reference values
             self.validation_value = None
@@ -55,7 +61,8 @@ class Metadata:
     def get_reference_file_names(self) -> list[str]:
         return (
             self.metadata.loc[
-                self.metadata[self.reference_column] == self.reference_value, self.sample_identifier_column
+                self.metadata[self.reference_column] == self.reference_value,
+                self.sample_identifier_column,
             ]
             .unique()
             .tolist()
@@ -64,13 +71,16 @@ class Metadata:
     def get_validation_file_names(self) -> list[str]:
         return (
             self.metadata.loc[
-                self.metadata[self.reference_column] != self.reference_value, self.sample_identifier_column
+                self.metadata[self.reference_column] != self.reference_value,
+                self.sample_identifier_column,
             ]
             .unique()
             .tolist()
         )
 
-    def _lookup(self, file_name: str, which: Literal["batch", "reference_file", "reference_value"]) -> str:
+    def _lookup(
+        self, file_name: str, which: Literal["batch", "reference_file", "reference_value"]
+    ) -> str:
         if which == "batch":
             lookup_col = self.batch_column
         elif which == "reference_file":
@@ -79,7 +89,9 @@ class Metadata:
             lookup_col = self.reference_column
         else:
             raise ValueError("Wrong 'which' parameter")
-        return self.metadata.loc[self.metadata[self.sample_identifier_column] == file_name, lookup_col].iloc[0]
+        return self.metadata.loc[
+            self.metadata[self.sample_identifier_column] == file_name, lookup_col
+        ].iloc[0]
 
     def get_ref_value(self, file_name: str) -> str:
         """Returns the corresponding reference value of a file."""
@@ -99,7 +111,9 @@ class Metadata:
         ].iloc[0]
 
     def get_files_per_batch(self, batch) -> list[str]:
-        return self.metadata.loc[self.metadata[self.batch_column] == batch, self.sample_identifier_column].tolist()
+        return self.metadata.loc[
+            self.metadata[self.batch_column] == batch, self.sample_identifier_column
+        ].tolist()
 
     def add_file_to_metadata(self, file_name: str, batch: Union[str, int]) -> None:
         new_file_df = pd.DataFrame(
@@ -121,7 +135,9 @@ class Metadata:
                 self.metadata[self.batch_column] = self.metadata[self.batch_column].astype(np.int8)
             except ValueError:
                 self.metadata[f"original_{self.batch_column}"] = self.metadata[self.batch_column]
-                mapping = {entry: i for i, entry in enumerate(self.metadata[self.batch_column].unique())}
+                mapping = {
+                    entry: i for i, entry in enumerate(self.metadata[self.batch_column].unique())
+                }
                 self.metadata[self.batch_column] = self.metadata[self.batch_column].map(mapping)
 
     def validate_metadata_table(self):
@@ -166,7 +182,9 @@ class Metadata:
     def assemble_reference_assembly_dict(self):
         """Builds a dictionary of shape {batch: [files, ...], ...} to store files of batches without references"""
         batches_wo_reference = self.find_batches_without_reference()
-        self.reference_assembly_dict = {batch: self.get_files_per_batch(batch) for batch in batches_wo_reference}
+        self.reference_assembly_dict = {
+            batch: self.get_files_per_batch(batch) for batch in batches_wo_reference
+        }
 
 
 class MockMetadata(Metadata):

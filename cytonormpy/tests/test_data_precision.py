@@ -19,8 +19,12 @@ def test_without_clustering_fcs(metadata: pd.DataFrame, INPUT_DIR: Path, tmpdir:
     cn = cnp.CytoNorm()
     t = AsinhTransformer()
     cn.add_transformer(t)
-    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[0].tolist()
-    cn.run_fcs_data_setup(metadata=metadata, input_directory=INPUT_DIR, output_directory=tmpdir, channels=detectors)
+    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[
+        0
+    ].tolist()
+    cn.run_fcs_data_setup(
+        metadata=metadata, input_directory=INPUT_DIR, output_directory=tmpdir, channels=detectors
+    )
 
     cn.calculate_quantiles(n_quantiles=99)
     cn.calculate_splines()
@@ -50,8 +54,12 @@ def test_without_clustering_fcs_string_batch(metadata: pd.DataFrame, INPUT_DIR: 
     cn = cnp.CytoNorm()
     t = AsinhTransformer()
     cn.add_transformer(t)
-    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[0].tolist()
-    cn.run_fcs_data_setup(metadata=metadata, input_directory=INPUT_DIR, output_directory=tmpdir, channels=detectors)
+    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[
+        0
+    ].tolist()
+    cn.run_fcs_data_setup(
+        metadata=metadata, input_directory=INPUT_DIR, output_directory=tmpdir, channels=detectors
+    )
 
     cn.calculate_quantiles(n_quantiles=99)
     cn.calculate_splines()
@@ -89,7 +97,9 @@ def _create_anndata(input_dir, file_list):
         obs = np.repeat(md_row, events.shape[0], axis=0)
         var_frame = fcs.channels
         obs_frame = pd.DataFrame(
-            data=obs, columns=["file_name"], index=pd.Index([str(i) for i in range(events.shape[0])])
+            data=obs,
+            columns=["file_name"],
+            index=pd.Index([str(i) for i in range(events.shape[0])]),
         )
         adata = ad.AnnData(obs=obs_frame, var=var_frame, layers={"normalized": events})
         adata.var_names_make_unique()
@@ -120,8 +130,12 @@ def test_without_clustering_anndata(data_anndata: AnnData, INPUT_DIR: Path):
     cn = cnp.CytoNorm()
     t = AsinhTransformer()
     cn.add_transformer(t)
-    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[0].tolist()
-    cn.run_anndata_setup(adata=data_anndata, layer="compensated", channels=detectors, key_added="normalized")
+    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[
+        0
+    ].tolist()
+    cn.run_anndata_setup(
+        adata=data_anndata, layer="compensated", channels=detectors, key_added="normalized"
+    )
     cn.calculate_quantiles(n_quantiles=99)
     cn.calculate_splines()
     cn.normalize_data()
@@ -130,12 +144,16 @@ def test_without_clustering_anndata(data_anndata: AnnData, INPUT_DIR: Path):
 
     comp_data = data_anndata[data_anndata.obs["reference"] == "other", :].copy()
 
-    assert comp_data.obs["file_name"].unique().tolist() == r_anndata.obs["file_name"].unique().tolist()
+    assert (
+        comp_data.obs["file_name"].unique().tolist() == r_anndata.obs["file_name"].unique().tolist()
+    )
     assert comp_data.obs["file_name"].tolist() == r_anndata.obs["file_name"].tolist()
     assert comp_data.shape == r_anndata.shape
 
     np.testing.assert_array_almost_equal(
-        np.array(r_anndata.layers["normalized"]), np.array(comp_data.layers["normalized"]), decimal=3
+        np.array(r_anndata.layers["normalized"]),
+        np.array(comp_data.layers["normalized"]),
+        decimal=3,
     )
 
 
@@ -154,8 +172,12 @@ def test_without_clustering_anndata_string_batch(data_anndata: AnnData, INPUT_DI
     cn = cnp.CytoNorm()
     t = AsinhTransformer()
     cn.add_transformer(t)
-    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[0].tolist()
-    cn.run_anndata_setup(adata=data_anndata, layer="compensated", channels=detectors, key_added="normalized")
+    detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[
+        0
+    ].tolist()
+    cn.run_anndata_setup(
+        adata=data_anndata, layer="compensated", channels=detectors, key_added="normalized"
+    )
     cn.calculate_quantiles(n_quantiles=99)
     cn.calculate_splines()
     cn.normalize_data()
@@ -164,10 +186,14 @@ def test_without_clustering_anndata_string_batch(data_anndata: AnnData, INPUT_DI
 
     comp_data = data_anndata[data_anndata.obs["reference"] == "other", :].copy()
 
-    assert comp_data.obs["file_name"].unique().tolist() == r_anndata.obs["file_name"].unique().tolist()
+    assert (
+        comp_data.obs["file_name"].unique().tolist() == r_anndata.obs["file_name"].unique().tolist()
+    )
     assert comp_data.obs["file_name"].tolist() == r_anndata.obs["file_name"].tolist()
     assert comp_data.shape == r_anndata.shape
 
     np.testing.assert_array_almost_equal(
-        np.array(r_anndata.layers["normalized"]), np.array(comp_data.layers["normalized"]), decimal=3
+        np.array(r_anndata.layers["normalized"]),
+        np.array(comp_data.layers["normalized"]),
+        decimal=3,
     )

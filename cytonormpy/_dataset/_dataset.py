@@ -89,13 +89,17 @@ class DataHandler:
         Creates the reference dataframe by concatenating the reference files
         and a subsample of files of batch w/o references
         """
-        original_references = pd.concat([self.get_dataframe(file) for file in self.metadata.ref_file_names], axis=0)
+        original_references = pd.concat(
+            [self.get_dataframe(file) for file in self.metadata.ref_file_names], axis=0
+        )
 
         # cytonorm 2.0: Construct the reference from a subset of all files per batch
         artificial_reference_dict = self.metadata.reference_assembly_dict
         artificial_refs = []
         for batch in artificial_reference_dict:
-            df = pd.concat([self.get_dataframe(file) for file in artificial_reference_dict[batch]], axis=0)
+            df = pd.concat(
+                [self.get_dataframe(file) for file in artificial_reference_dict[batch]], axis=0
+            )
             df = df.sample(n=self.n_cells_reference, random_state=187)
 
             old_idx = df.index
@@ -107,7 +111,8 @@ class DataHandler:
             new_sample_vals = [label] * n
 
             new_idx = pd.MultiIndex.from_arrays(
-                [old_idx.get_level_values(0), old_idx.get_level_values(1), new_sample_vals], names=names
+                [old_idx.get_level_values(0), old_idx.get_level_values(1), new_sample_vals],
+                names=names,
             )
             df.index = new_idx
             artificial_refs.append(df)
@@ -313,7 +318,9 @@ class DataHandlerFCS(DataHandler):
         reader: TextFileReader = pd.read_csv(path, sep=None, iterator=True, engine="python")
         return reader._engine.data.dialect.delimiter
 
-    def write(self, file_name: str, data: pd.DataFrame, output_dir: Optional[PathLike] = None) -> None:
+    def write(
+        self, file_name: str, data: pd.DataFrame, output_dir: Optional[PathLike] = None
+    ) -> None:
         """\
         Writes the data to the hard drive as an .fcs file.
 
@@ -351,7 +358,9 @@ class DataHandlerFCS(DataHandler):
 
         channels: dict = fcs.channels
 
-        pnn_labels = {channels[channel_number]["PnN"]: int(channel_number) for channel_number in channels}
+        pnn_labels = {
+            channels[channel_number]["PnN"]: int(channel_number) for channel_number in channels
+        }
 
         channel_indices = self._find_channel_indices_in_fcs(pnn_labels, data.columns)
         orig_events = np.reshape(np.array(fcs.events), (-1, fcs.channel_count))
@@ -421,7 +430,9 @@ class DataHandlerAnnData(DataHandler):
         if self._key_added not in self.adata.layers:
             self.adata.layers[self._key_added] = np.array(self.adata.layers[self._layer])
 
-        _metadata = self._condense_metadata(self.adata.obs, reference_column, batch_column, sample_identifier_column)
+        _metadata = self._condense_metadata(
+            self.adata.obs, reference_column, batch_column, sample_identifier_column
+        )
 
         self.metadata = Metadata(
             metadata=_metadata,
@@ -448,7 +459,11 @@ class DataHandlerAnnData(DataHandler):
         self.ref_data_df = self._provider.select_channels(self.ref_data_df)
 
     def _condense_metadata(
-        self, obs: pd.DataFrame, reference_column: str, batch_column: str, sample_identifier_column: str
+        self,
+        obs: pd.DataFrame,
+        reference_column: str,
+        batch_column: str,
+        sample_identifier_column: str,
     ) -> pd.DataFrame:
         df = obs[[reference_column, batch_column, sample_identifier_column]]
         df = df.drop_duplicates()
@@ -472,7 +487,9 @@ class DataHandlerAnnData(DataHandler):
         )
 
     def _find_obs_idxs(self, file_name) -> pd.Index:
-        return self.adata.obs.loc[self.adata.obs[self.metadata.sample_identifier_column] == file_name, :].index
+        return self.adata.obs.loc[
+            self.adata.obs[self.metadata.sample_identifier_column] == file_name, :
+        ].index
 
     def _get_array_indices(self, obs_idxs: pd.Index) -> np.ndarray:
         return self.adata.obs.index.get_indexer(obs_idxs)
@@ -506,7 +523,9 @@ class DataHandlerAnnData(DataHandler):
 
         inv_transformed: pd.DataFrame = self._provider.inverse_transform_data(data)
 
-        self.adata.layers[self._key_added][np.ix_(arr_idxs, np.array(channel_indices))] = inv_transformed.values
+        self.adata.layers[self._key_added][np.ix_(arr_idxs, np.array(channel_indices))] = (
+            inv_transformed.values
+        )
 
         return
 

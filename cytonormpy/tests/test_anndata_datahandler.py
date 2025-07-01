@@ -55,7 +55,11 @@ def test_get_dataframe(datahandleranndata: DataHandlerAnnData, metadata: pd.Data
     assert isinstance(df, pd.DataFrame)
     assert df.shape == (1000, len(dh.channels))
     # file_name, reference, batch should be index, not columns
-    for col in (dh.metadata.sample_identifier_column, dh.metadata.reference_column, dh.metadata.batch_column):
+    for col in (
+        dh.metadata.sample_identifier_column,
+        dh.metadata.reference_column,
+        dh.metadata.batch_column,
+    ):
         assert col not in df.columns
 
 

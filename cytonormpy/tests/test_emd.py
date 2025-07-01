@@ -7,7 +7,13 @@ import readfcs
 
 
 def calculate_emds(
-    input_directory, files, channels, input_directory_ct=None, ct_files=None, cell_types_list=None, transform=False
+    input_directory,
+    files,
+    channels,
+    input_directory_ct=None,
+    ct_files=None,
+    cell_types_list=None,
+    transform=False,
 ):
     """
     Input:
@@ -27,14 +33,28 @@ def calculate_emds(
     > The function assumes that the order of files in the list 'files' is the same as the order of files in the list 'ct_files'
     """
     dict_channels_ct = create_marker_dictionary_ct(
-        input_directory, files, channels, input_directory_ct, ct_files, cell_types_list, transform_data=transform
+        input_directory,
+        files,
+        channels,
+        input_directory_ct,
+        ct_files,
+        cell_types_list,
+        transform_data=transform,
     )
-    emds_dict = compute_emds_fromdict_ct(dict_channels_ct, cell_types_list=cell_types_list, num_batches=len(files))
+    emds_dict = compute_emds_fromdict_ct(
+        dict_channels_ct, cell_types_list=cell_types_list, num_batches=len(files)
+    )
     return emds_dict
 
 
 def create_marker_dictionary_ct(
-    input_directory, files, channels, input_directory_ct, ct_files, cell_types_list, transform_data=False
+    input_directory,
+    files,
+    channels,
+    input_directory_ct,
+    ct_files,
+    cell_types_list,
+    transform_data=False,
 ):
     """
     Input:
@@ -211,7 +231,9 @@ def plot_emd_scatter(distances_before, distances_after, mode="cell_type"):
     > a scatter plot of EMDs before and after normalization
     """
     df = wrap_results(distances_before, distances_after)
-    df["bacth correction effect"] = np.where(df["EMD_after"] > df["EMD_before"], "worsened", "improved")
+    df["bacth correction effect"] = np.where(
+        df["EMD_after"] > df["EMD_before"], "worsened", "improved"
+    )
 
     if mode == "compare":
         sns.scatterplot(data=df, y="EMD_before", x="EMD_after", hue="bacth correction effect")

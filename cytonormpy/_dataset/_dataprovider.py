@@ -76,7 +76,11 @@ class DataProvider:
 
         """
         if self._transformer is not None:
-            return pd.DataFrame(data=self._transformer.transform(data.values), columns=data.columns, index=data.index)
+            return pd.DataFrame(
+                data=self._transformer.transform(data.values),
+                columns=data.columns,
+                index=data.index,
+            )
         return data
 
     def inverse_transform_data(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -96,7 +100,9 @@ class DataProvider:
         """
         if self._transformer is not None:
             return pd.DataFrame(
-                data=self._transformer.inverse_transform(data.values), columns=data.columns, index=data.index
+                data=self._transformer.inverse_transform(data.values),
+                columns=data.columns,
+                index=data.index,
             )
         return data
 
@@ -181,7 +187,11 @@ class DataProvider:
         self._annotate_batch_value(data, file_name)
         self._annotate_sample_identifier(data, file_name)
         data = data.set_index(
-            [self.metadata.reference_column, self.metadata.batch_column, self.metadata.sample_identifier_column]
+            [
+                self.metadata.reference_column,
+                self.metadata.batch_column,
+                self.metadata.sample_identifier_column,
+            ]
         )
         return data
 
@@ -228,7 +238,9 @@ class DataProviderFCS(DataProvider):
     ) -> None:
         super().__init__(metadata=metadata, channels=channels, transformer=transformer)
 
-        self._reader = DataReaderFCS(input_directory=input_directory, truncate_max_range=truncate_max_range)
+        self._reader = DataReaderFCS(
+            input_directory=input_directory, truncate_max_range=truncate_max_range
+        )
 
     def parse_raw_data(self, file_name: str) -> pd.DataFrame:
         return self._reader.parse_fcs_df(file_name)
@@ -280,5 +292,7 @@ class DataProviderAnnData(DataProvider):
             files = file_name
         return cast(
             pd.DataFrame,
-            self.adata[self.adata.obs[self.metadata.sample_identifier_column].isin(files), :].to_df(layer=self.layer),
+            self.adata[self.adata.obs[self.metadata.sample_identifier_column].isin(files), :].to_df(
+                layer=self.layer
+            ),
         )

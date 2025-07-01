@@ -57,7 +57,9 @@ def test_quantile_calculation_custom_array(expr_q: ExpressionQuantiles):
 
 
 def test_add_quantiles(expr_q: ExpressionQuantiles):
-    data_array = np.random.randint(0, 100, N_CHANNELS * 20).reshape(20, N_CHANNELS).astype(np.float64)
+    data_array = (
+        np.random.randint(0, 100, N_CHANNELS * 20).reshape(20, N_CHANNELS).astype(np.float64)
+    )
     q = np.quantile(data_array, expr_q.quantiles, axis=0)
     q = q[:, :, np.newaxis, np.newaxis]
     expr_q.add_quantiles(q, batch_idx=2, cluster_idx=1)

@@ -133,7 +133,9 @@ def data_anndata() -> AnnData:
         obs = np.repeat(md_row, events.shape[0], axis=0)
         var_frame = fcs.channels
         obs_frame = pd.DataFrame(
-            data=obs, columns=metadata.columns, index=pd.Index([str(i) for i in range(events.shape[0])])
+            data=obs,
+            columns=metadata.columns,
+            index=pd.Index([str(i) for i in range(events.shape[0])]),
         )
         adata = ad.AnnData(obs=obs_frame, var=var_frame, layers={"compensated": events})
         adata.var_names_make_unique()
@@ -149,7 +151,9 @@ def data_anndata() -> AnnData:
 
 
 @pytest.fixture
-def datahandleranndata(data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict) -> DataHandlerAnnData:
+def datahandleranndata(
+    data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict
+) -> DataHandlerAnnData:
     return DataHandlerAnnData(data_anndata, **DATAHANDLER_DEFAULT_KWARGS)
 
 

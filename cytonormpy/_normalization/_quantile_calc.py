@@ -5,7 +5,9 @@ from ._utils import numba_quantiles
 
 
 class BaseQuantileHandler:
-    def __init__(self, channel_axis: int, quantile_axis: int, cluster_axis: int, batch_axis: int, ndim: int) -> None:
+    def __init__(
+        self, channel_axis: int, quantile_axis: int, cluster_axis: int, batch_axis: int, ndim: int
+    ) -> None:
         self._channel_axis = channel_axis
         self._quantile_axis = quantile_axis
         self._cluster_axis = cluster_axis
@@ -120,7 +122,9 @@ class ExpressionQuantiles(BaseQuantileHandler):
         # needs testing... not sure if more readable but surely more generic
         return q[:, :, np.newaxis, np.newaxis]
 
-    def calculate_and_add_quantiles(self, data: np.ndarray, batch_idx: int, cluster_idx: int) -> None:
+    def calculate_and_add_quantiles(
+        self, data: np.ndarray, batch_idx: int, cluster_idx: int
+    ) -> None:
         """\
         Calculates and adds the quantile array.
 
@@ -161,7 +165,9 @@ class ExpressionQuantiles(BaseQuantileHandler):
 
         """
 
-        self._expr_quantiles[self._create_indices(cluster_idx=cluster_idx, batch_idx=batch_idx)] = quantile_array
+        self._expr_quantiles[self._create_indices(cluster_idx=cluster_idx, batch_idx=batch_idx)] = (
+            quantile_array
+        )
 
     def add_nan_slice(self, batch_idx: int, cluster_idx: int) -> None:
         """\
@@ -219,7 +225,10 @@ class ExpressionQuantiles(BaseQuantileHandler):
 
         """
         idxs = self._create_indices(
-            channel_idx=channel_idx, quantile_idx=quantile_idx, cluster_idx=cluster_idx, batch_idx=batch_idx
+            channel_idx=channel_idx,
+            quantile_idx=quantile_idx,
+            cluster_idx=cluster_idx,
+            batch_idx=batch_idx,
         )
         q = self._expr_quantiles[idxs]
         if flattened:
@@ -303,7 +312,10 @@ class GoalDistribution(BaseQuantileHandler):
 
         """
         idxs = self._create_indices(
-            channel_idx=channel_idx, quantile_idx=quantile_idx, cluster_idx=cluster_idx, batch_idx=batch_idx
+            channel_idx=channel_idx,
+            quantile_idx=quantile_idx,
+            cluster_idx=cluster_idx,
+            batch_idx=batch_idx,
         )
         d = self.distrib[idxs]
         if flattened:

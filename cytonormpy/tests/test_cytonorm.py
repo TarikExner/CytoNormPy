@@ -60,7 +60,10 @@ def test_for_normalized_files_anndata(data_anndata):
 
     # First, we only normalize the validation samples...
     val_file_names = adata.obs[adata.obs["reference"] == "other"]["file_name"].unique().tolist()
-    batches = [adata.obs.loc[adata.obs["file_name"] == file, "batch"].unique().tolist()[0] for file in val_file_names]
+    batches = [
+        adata.obs.loc[adata.obs["file_name"] == file, "batch"].unique().tolist()[0]
+        for file in val_file_names
+    ]
     cn.normalize_data(file_names=val_file_names, batches=batches)
     assert "cyto_normalized" in adata.layers.keys()
 
@@ -87,7 +90,9 @@ def test_for_normalized_files_fcs(metadata: pd.DataFrame, INPUT_DIR: Path, tmp_p
     cn = cnp.CytoNorm()
     t = cnp.AsinhTransformer()
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=tmp_path)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=tmp_path
+    )
     cn.calculate_quantiles()
     cn.calculate_splines(limits=[0, 8])
     cn.normalize_data()
@@ -102,7 +107,9 @@ def test_fancy_numpy_indexing_without_clustering(metadata: pd.DataFrame, INPUT_D
     cn = cnp.CytoNorm()
     t = cnp.AsinhTransformer()
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
 
     # we compare the df.loc with our numpy indexing
     ref_data_df: pd.DataFrame = cn._datahandler.get_ref_data_df()
@@ -119,10 +126,14 @@ def test_fancy_numpy_indexing_without_clustering(metadata: pd.DataFrame, INPUT_D
     batch_cluster_idxs = np.vstack([batch_idxs, cluster_idxs]).T
     batch_cluster_unique_idxs = np.unique(batch_cluster_idxs, axis=0, return_index=True)[1]
     # we append the shape as last idx
-    batch_cluster_unique_idxs = np.hstack([batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])])
+    batch_cluster_unique_idxs = np.hstack(
+        [batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])]
+    )
 
     # we create a lookup table to get the batch and cluster back
-    batch_cluster_lookup = {idx: [batch_idxs[idx], cluster_idxs[idx]] for idx in batch_cluster_unique_idxs[:-1]}
+    batch_cluster_lookup = {
+        idx: [batch_idxs[idx], cluster_idxs[idx]] for idx in batch_cluster_unique_idxs[:-1]
+    }
 
     ref_data = ref_data_df.to_numpy()
 
@@ -145,7 +156,9 @@ def test_fancy_numpy_indexing_with_clustering(metadata: pd.DataFrame, INPUT_DIR:
     cn.add_transformer(t)
     fs = FlowSOM(n_clusters=10, xdim=5, ydim=5)
     cn.add_clusterer(fs)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
     cn.run_clustering()
 
     # we compare the df.loc with our numpy indexing
@@ -160,10 +173,14 @@ def test_fancy_numpy_indexing_with_clustering(metadata: pd.DataFrame, INPUT_DIR:
     batch_cluster_idxs = np.vstack([batch_idxs, cluster_idxs]).T
     batch_cluster_unique_idxs = np.unique(batch_cluster_idxs, axis=0, return_index=True)[1]
     # we append the shape as last idx
-    batch_cluster_unique_idxs = np.hstack([batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])])
+    batch_cluster_unique_idxs = np.hstack(
+        [batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])]
+    )
 
     # we create a lookup table to get the batch and cluster back
-    batch_cluster_lookup = {idx: [batch_idxs[idx], cluster_idxs[idx]] for idx in batch_cluster_unique_idxs[:-1]}
+    batch_cluster_lookup = {
+        idx: [batch_idxs[idx], cluster_idxs[idx]] for idx in batch_cluster_unique_idxs[:-1]
+    }
 
     ref_data = ref_data_df.to_numpy()
 
@@ -180,13 +197,17 @@ def test_fancy_numpy_indexing_with_clustering(metadata: pd.DataFrame, INPUT_DIR:
         assert np.array_equal(data, conventional_lookup)
 
 
-def test_fancy_numpy_indexing_with_clustering_batch_cluster_idxs(metadata: pd.DataFrame, INPUT_DIR: Path):
+def test_fancy_numpy_indexing_with_clustering_batch_cluster_idxs(
+    metadata: pd.DataFrame, INPUT_DIR: Path
+):
     cn = cnp.CytoNorm()
     t = cnp.AsinhTransformer()
     cn.add_transformer(t)
     fs = FlowSOM(n_clusters=10, xdim=5, ydim=5)
     cn.add_clusterer(fs)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
     cn.run_clustering()
 
     # we compare the df.loc with our numpy indexing
@@ -199,12 +220,18 @@ def test_fancy_numpy_indexing_with_clustering_batch_cluster_idxs(metadata: pd.Da
     batch_idxs = ref_data_df.index.get_level_values("batch").to_numpy()
     cluster_idxs = ref_data_df.index.get_level_values("clusters").to_numpy()
     batch_cluster_idxs = np.vstack([batch_idxs, cluster_idxs]).T
-    unique_combinations, batch_cluster_unique_idxs = np.unique(batch_cluster_idxs, axis=0, return_index=True)
+    unique_combinations, batch_cluster_unique_idxs = np.unique(
+        batch_cluster_idxs, axis=0, return_index=True
+    )
     # we append the shape as last idx
-    batch_cluster_unique_idxs = np.hstack([batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])])
+    batch_cluster_unique_idxs = np.hstack(
+        [batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])]
+    )
 
     # we create a lookup table to get the batch and cluster back
-    batch_cluster_lookup = {idx: unique_combinations[i] for i, idx in enumerate(batch_cluster_unique_idxs[:-1])}
+    batch_cluster_lookup = {
+        idx: unique_combinations[i] for i, idx in enumerate(batch_cluster_unique_idxs[:-1])
+    }
     batches = sorted(ref_data_df.index.get_level_values("batch").unique().tolist())
     clusters = sorted(ref_data_df.index.get_level_values("clusters").unique().tolist())
     channels = ref_data_df.columns.tolist()
@@ -240,7 +267,9 @@ def test_fancy_numpy_indexing_with_clustering_batch_cluster_idxs(metadata: pd.Da
             assert np.array_equal(conventional_lookup, data)
             cn.calculate_quantiles()
 
-            cn._expr_quantiles.calculate_and_add_quantiles(data=conventional_lookup, batch_idx=b, cluster_idx=c)
+            cn._expr_quantiles.calculate_and_add_quantiles(
+                data=conventional_lookup, batch_idx=b, cluster_idx=c
+            )
             conv_q = cn._expr_quantiles.get_quantiles(None, None, b, c)
             cn._expr_quantiles.calculate_and_add_quantiles(data=data, batch_idx=b, cluster_idx=c)
             numpy_q = cn._expr_quantiles.get_quantiles(None, None, b_numpy, c_numpy)
@@ -276,7 +305,10 @@ class CytoNormPandasLookupQuantileCalc(CytoNorm):
         n_clusters = len(clusters)
 
         self._expr_quantiles = ExpressionQuantiles(
-            n_channels=n_channels, n_quantiles=n_quantiles, n_batches=n_batches, n_clusters=n_clusters
+            n_channels=n_channels,
+            n_quantiles=n_quantiles,
+            n_batches=n_batches,
+            n_clusters=n_clusters,
         )
 
         self._not_calculated = {batch: [] for batch in self.batches}
@@ -301,7 +333,9 @@ class CytoNormPandasLookupQuantileCalc(CytoNorm):
 
                     continue
 
-                self._expr_quantiles.calculate_and_add_quantiles(data=data, batch_idx=b, cluster_idx=c)
+                self._expr_quantiles.calculate_and_add_quantiles(
+                    data=data, batch_idx=b, cluster_idx=c
+                )
 
         return
 
@@ -313,24 +347,32 @@ def test_fancy_numpy_indexing_expr_quantiles(metadata: pd.DataFrame, INPUT_DIR: 
     cn1 = CytoNorm()
     cn1.add_transformer(t)
     cn1.add_clusterer(fs)
-    cn1.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn1.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
     cn1.run_clustering()
 
     cn2 = CytoNormPandasLookupQuantileCalc()
     cn2.add_transformer(t)
     cn2.add_clusterer(fs)
-    cn2.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn2.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
     cn2.run_clustering()
 
-    assert np.array_equal(cn1._datahandler.ref_data_df.to_numpy(), cn2._datahandler.ref_data_df.to_numpy())
+    assert np.array_equal(
+        cn1._datahandler.ref_data_df.to_numpy(), cn2._datahandler.ref_data_df.to_numpy()
+    )
 
     cn1_df = cn1._datahandler.ref_data_df
     cn2_df = cn2._datahandler.ref_data_df
     assert np.array_equal(
-        cn1_df.index.get_level_values("batch").to_numpy(), cn2_df.index.get_level_values("batch").to_numpy()
+        cn1_df.index.get_level_values("batch").to_numpy(),
+        cn2_df.index.get_level_values("batch").to_numpy(),
     )
     assert not np.array_equal(
-        cn1_df.index.get_level_values("clusters").to_numpy(), cn2_df.index.get_level_values("clusters").to_numpy()
+        cn1_df.index.get_level_values("clusters").to_numpy(),
+        cn2_df.index.get_level_values("clusters").to_numpy(),
     )
     cn2._datahandler.ref_data_df = cn2._datahandler.ref_data_df.droplevel("clusters")
     cn2._datahandler.ref_data_df["clusters"] = cn1_df.index.get_level_values("clusters").to_numpy()
@@ -353,7 +395,9 @@ def test_fancy_numpy_indexing_expr_quantiles(metadata: pd.DataFrame, INPUT_DIR: 
     assert cn1.clusters == cn2.clusters
     assert cn1._not_calculated == cn2._not_calculated
 
-    assert np.array_equal(cn1._expr_quantiles._expr_quantiles, cn2._expr_quantiles._expr_quantiles, equal_nan=True)
+    assert np.array_equal(
+        cn1._expr_quantiles._expr_quantiles, cn2._expr_quantiles._expr_quantiles, equal_nan=True
+    )
 
 
 def test_quantile_calc_custom_array_errors(metadata: pd.DataFrame, INPUT_DIR: Path):
@@ -361,7 +405,9 @@ def test_quantile_calc_custom_array_errors(metadata: pd.DataFrame, INPUT_DIR: Pa
 
     cn = CytoNorm()
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
     with pytest.raises(TypeError):
         cn.calculate_quantiles(quantile_array=pd.DataFrame())
     with pytest.raises(ValueError):
@@ -383,19 +429,25 @@ def test_spline_calc_limits_errors(metadata: pd.DataFrame, INPUT_DIR: Path):
 
     cn = CytoNorm()
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=INPUT_DIR
+    )
     cn.calculate_quantiles()
     with pytest.raises(TypeError):
         cn.calculate_splines(limits="limitless computation!")
     cn.calculate_splines(limits=[0, 8])
 
 
-def test_normalizing_files_that_have_been_added_later(metadata: pd.DataFrame, INPUT_DIR: Path, tmpdir):
+def test_normalizing_files_that_have_been_added_later(
+    metadata: pd.DataFrame, INPUT_DIR: Path, tmpdir
+):
     t = cnp.AsinhTransformer()
 
     cn = CytoNorm()
     cn.add_transformer(t)
-    cn.run_fcs_data_setup(input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=tmpdir)
+    cn.run_fcs_data_setup(
+        input_directory=INPUT_DIR, metadata=metadata, channels="markers", output_directory=tmpdir
+    )
     cn.calculate_quantiles()
     cn.calculate_splines(limits=[0, 8])
     cn.normalize_data()
@@ -432,7 +484,9 @@ def test_normalizing_files_that_have_been_added_later_anndata(data_anndata: AnnD
     file_adata = longer_adata[longer_adata.obs["file_name"] == file_name, :].copy()
     dup_file_adata = longer_adata[longer_adata.obs["file_name"] == dup_filename, :].copy()
 
-    assert np.array_equal(file_adata.layers["cyto_normalized"], dup_file_adata.layers["cyto_normalized"])
+    assert np.array_equal(
+        file_adata.layers["cyto_normalized"], dup_file_adata.layers["cyto_normalized"]
+    )
 
 
 def test_normalizing_files_that_have_been_added_later_valueerror():
@@ -441,15 +495,22 @@ def test_normalizing_files_that_have_been_added_later_valueerror():
         cn.normalize_data(file_names="Gates_PTLG034_Unstim_Control_2_dup.fcs", batches=[3, 4])
 
 
-def test_all_zero_quantiles_are_converted_to_IDSpline(metadata: pd.DataFrame, INPUT_DIR, tmp_path: Path):
+def test_all_zero_quantiles_are_converted_to_IDSpline(
+    metadata: pd.DataFrame, INPUT_DIR, tmp_path: Path
+):
     cn = cnp.CytoNorm()
     t = AsinhTransformer()
     fs = FlowSOM(n_clusters=30)  # way too many clusters, but we want that.
     cn.add_clusterer(fs)
     cn.add_transformer(t)
-    coding_detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[0].tolist()
+    coding_detectors = pd.read_csv(os.path.join(INPUT_DIR, "coding_detectors.txt"), header=None)[
+        0
+    ].tolist()
     cn.run_fcs_data_setup(
-        metadata=metadata, input_directory=INPUT_DIR, channels=coding_detectors, output_directory=tmp_path
+        metadata=metadata,
+        input_directory=INPUT_DIR,
+        channels=coding_detectors,
+        output_directory=tmp_path,
     )
     cn.run_clustering(cluster_cv_threshold=2)
     cn.calculate_quantiles()

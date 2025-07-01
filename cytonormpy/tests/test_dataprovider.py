@@ -60,7 +60,9 @@ def test_channels_setters(PROVIDER_KWARGS_FCS: dict):
 def test_select_channels_method_channels_equals_none(PROVIDER_KWARGS_FCS: dict):
     """if channels is None, the original data are returned"""
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     df = x.select_channels(data)
     assert data.equals(df)
 
@@ -69,7 +71,9 @@ def test_select_channels_method_channels_set(PROVIDER_KWARGS_FCS: dict):
     """if channels is a list, only the channels are kept"""
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
     x.channels = ["ch1", "ch2"]
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     df = x.select_channels(data)
     assert df.shape == (3, 2)
     assert "ch3" not in df.columns
@@ -80,7 +84,9 @@ def test_select_channels_method_channels_set(PROVIDER_KWARGS_FCS: dict):
 def test_transform_method_no_transformer(PROVIDER_KWARGS_FCS: dict):
     """if transformer is None, the original data are returned"""
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     df = x.transform_data(data)
     assert data.equals(df)
 
@@ -89,7 +95,9 @@ def test_transform_method_with_transformer(PROVIDER_KWARGS_FCS: dict):
     """if channels is None, the original data are returned"""
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
     x.transformer = AsinhTransformer()
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     df = x.transform_data(data)
     assert all(df == np.arcsinh(1 / 5))
     assert all(df.columns == data.columns)
@@ -99,7 +107,9 @@ def test_transform_method_with_transformer(PROVIDER_KWARGS_FCS: dict):
 def test_inv_transform_method_no_transformer(PROVIDER_KWARGS_FCS: dict):
     """if transformer is None, the original data are returned"""
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     df = x.inverse_transform_data(data)
     assert data.equals(df)
 
@@ -108,7 +118,9 @@ def test_inv_transform_method_with_transformer(PROVIDER_KWARGS_FCS: dict):
     """if channels is None, the original data are returned"""
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
     x.transformer = AsinhTransformer()
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     df = x.transform_data(data)
     assert all(df == np.sinh(1) * 5)
     assert all(df.columns == data.columns)
@@ -117,10 +129,16 @@ def test_inv_transform_method_with_transformer(PROVIDER_KWARGS_FCS: dict):
 
 def test_annotate_metadata(metadata: pd.DataFrame, PROVIDER_KWARGS_FCS: dict):
     x = DataProviderFCS(**PROVIDER_KWARGS_FCS)
-    data = pd.DataFrame(data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3)))
+    data = pd.DataFrame(
+        data=np.ones(shape=(3, 3)), columns=["ch1", "ch2", "ch3"], index=list(range(3))
+    )
     file_name = metadata["file_name"].tolist()[0]
     df = x.annotate_metadata(data, file_name)
     assert all(
         k in df.index.names
-        for k in [x.metadata.sample_identifier_column, x.metadata.reference_column, x.metadata.batch_column]
+        for k in [
+            x.metadata.sample_identifier_column,
+            x.metadata.reference_column,
+            x.metadata.batch_column,
+        ]
     )

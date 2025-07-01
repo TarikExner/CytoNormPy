@@ -417,12 +417,18 @@ class CytoNorm:
 
         # ... and get the idxs of their unique combinations
         batch_cluster_idxs = np.vstack([batch_idxs, cluster_idxs]).T
-        unique_combinations, batch_cluster_unique_idxs = np.unique(batch_cluster_idxs, axis=0, return_index=True)
+        unique_combinations, batch_cluster_unique_idxs = np.unique(
+            batch_cluster_idxs, axis=0, return_index=True
+        )
         # we append the shape as last idx
-        batch_cluster_unique_idxs = np.hstack([batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])])
+        batch_cluster_unique_idxs = np.hstack(
+            [batch_cluster_unique_idxs, np.array(batch_cluster_idxs.shape[0])]
+        )
 
         # we create a lookup table to get the batch and cluster back
-        batch_cluster_lookup = {idx: unique_combinations[i] for i, idx in enumerate(batch_cluster_unique_idxs[:-1])}
+        batch_cluster_lookup = {
+            idx: unique_combinations[i] for i, idx in enumerate(batch_cluster_unique_idxs[:-1])
+        }
         # we also create a lookup table for the batch indexing...
         self.batch_idx_lookup = {batch: i for i, batch in enumerate(batches)}
         # ... and the cluster indexing
@@ -455,7 +461,9 @@ class CytoNorm:
         return
 
     def calculate_splines(
-        self, limits: Optional[Union[list[float], np.ndarray]] = None, goal: Union[str, int] = "batch_mean"
+        self,
+        limits: Optional[Union[list[float], np.ndarray]] = None,
+        goal: Union[str, int] = "batch_mean",
     ) -> None:
         """\
         Calculates the spline functions of the expression values
@@ -507,21 +515,35 @@ class CytoNorm:
                 if cluster in self._not_calculated[batch]:
                     for channel in self.channels:
                         self._add_identity_spline(
-                            splines=splines, batch=batch, cluster=cluster, channel=channel, limits=limits
+                            splines=splines,
+                            batch=batch,
+                            cluster=cluster,
+                            channel=channel,
+                            limits=limits,
                         )
                 else:
                     for ch, channel in enumerate(self.channels):
-                        q = expr_quantiles.get_quantiles(channel_idx=ch, quantile_idx=None, cluster_idx=c, batch_idx=b)
-                        g = goal_distrib.get_quantiles(channel_idx=ch, quantile_idx=None, cluster_idx=c, batch_idx=None)
+                        q = expr_quantiles.get_quantiles(
+                            channel_idx=ch, quantile_idx=None, cluster_idx=c, batch_idx=b
+                        )
+                        g = goal_distrib.get_quantiles(
+                            channel_idx=ch, quantile_idx=None, cluster_idx=c, batch_idx=None
+                        )
                         if np.unique(q).shape[0] == 1 or np.unique(g).shape[0] == 1:
                             # if there is only one unique value, the Fritsch-Carlson
                             # algorithm will fail. In that case, we use the Identity
                             # function
                             self._add_identity_spline(
-                                splines=splines, batch=batch, cluster=cluster, channel=channel, limits=limits
+                                splines=splines,
+                                batch=batch,
+                                cluster=cluster,
+                                channel=channel,
+                                limits=limits,
                             )
                         else:
-                            spl = Spline(batch=batch, cluster=cluster, channel=channel, limits=limits)
+                            spl = Spline(
+                                batch=batch, cluster=cluster, channel=channel, limits=limits
+                            )
                             spl.fit(q, g)
                             splines.add_spline(spl)
 
@@ -530,7 +552,12 @@ class CytoNorm:
         return
 
     def _add_identity_spline(
-        self, splines: Splines, batch: int, cluster: int, channel: str, limits: Optional[Union[list[float], np.ndarray]]
+        self,
+        splines: Splines,
+        batch: int,
+        cluster: int,
+        channel: str,
+        limits: Optional[Union[list[float], np.ndarray]],
     ):
         spl = Spline(batch, cluster, channel, spline_calc_function=IdentitySpline, limits=limits)
         spl.fit(current_distribution=None, goal_distribution=None)
@@ -556,7 +583,9 @@ class CytoNorm:
         df = df.sort_index(level="clusters")
 
         expr_data = df.to_numpy(copy=True)
-        clusters, cluster_idxs = np.unique(df.index.get_level_values("clusters").to_numpy(), return_index=True)
+        clusters, cluster_idxs = np.unique(
+            df.index.get_level_values("clusters").to_numpy(), return_index=True
+        )
         cluster_idxs = np.append(cluster_idxs, df.shape[0])
         channel_names = df.columns.tolist()
 
@@ -730,7 +759,9 @@ class CytoNorm:
             raise ValueError(f"files has to be one of ['validation', 'all'], you entered {files}")
 
         if isinstance(self._datahandler, DataHandlerFCS):
-            fcs_kwargs = {"truncate_max_range": self._datahandler._provider._reader._truncate_max_range}
+            fcs_kwargs = {
+                "truncate_max_range": self._datahandler._provider._reader._truncate_max_range
+            }
 
             if not self._datahandler._input_dir == self._datahandler._output_dir:
                 orig_frame = mad_from_fcs(
@@ -752,7 +783,8 @@ class CytoNorm:
                 if "file_name" in df.index.names:
                     df = df.reset_index(level="file_name")
                     df["file_name"] = [
-                        entry.strip(self._datahandler._prefix + "_") for entry in df["file_name"].tolist()
+                        entry.strip(self._datahandler._prefix + "_")
+                        for entry in df["file_name"].tolist()
                     ]
                     df = df.set_index("file_name", append=True, drop=True)
 
@@ -778,7 +810,9 @@ class CytoNorm:
             )
 
     def calculate_emd(
-        self, cell_labels: Optional[Union[str, dict]] = None, files: Literal["validation", "all"] = "validation"
+        self,
+        cell_labels: Optional[Union[str, dict]] = None,
+        files: Literal["validation", "all"] = "validation",
     ) -> None:
         """\
         Calculates the EMD on the normalized and unnormalized samples.
@@ -817,7 +851,9 @@ class CytoNorm:
             raise ValueError(f"files has to be one of ['validation', 'all'], you entered {files}")
 
         if isinstance(self._datahandler, DataHandlerFCS):
-            fcs_kwargs = {"truncate_max_range": self._datahandler._provider._reader._truncate_max_range}
+            fcs_kwargs = {
+                "truncate_max_range": self._datahandler._provider._reader._truncate_max_range
+            }
 
             if not self._datahandler._input_dir == self._datahandler._output_dir:
                 orig_frame = emd_from_fcs(
@@ -839,7 +875,8 @@ class CytoNorm:
                 if "file_name" in df.index.names:
                     df = df.reset_index(level="file_name")
                     df["file_name"] = [
-                        entry.strip(self._datahandler._prefix + "_") for entry in df["file_name"].tolist()
+                        entry.strip(self._datahandler._prefix + "_")
+                        for entry in df["file_name"].tolist()
                     ]
                     df = df.set_index("file_name", append=True, drop=True)
 

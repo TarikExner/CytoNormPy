@@ -280,7 +280,9 @@ def regularize_values(
     return x, y
 
 
-def _all_batches_have_reference(df: pd.DataFrame, reference: str, batch: str, ref_control_value: Optional[str]) -> bool:
+def _all_batches_have_reference(
+    df: pd.DataFrame, reference: str, batch: str, ref_control_value: Optional[str]
+) -> bool:
     """
     Function checks if there are samples labeled ref_control_value
     for each batch.

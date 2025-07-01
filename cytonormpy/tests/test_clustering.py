@@ -49,7 +49,9 @@ def test_run_clustering_with_markers(data_anndata: AnnData, detector_subset: lis
     cn.add_clusterer(FlowSOM())
     ref_data_df = cn._datahandler.ref_data_df
     original_shape = ref_data_df.shape
-    cn.run_clustering(n_cells=100, test_cluster_cv=True, cluster_cv_threshold=2, markers=detector_subset)
+    cn.run_clustering(
+        n_cells=100, test_cluster_cv=True, cluster_cv_threshold=2, markers=detector_subset
+    )
     assert "clusters" in cn._datahandler.ref_data_df.index.names
     assert cn._datahandler.ref_data_df.shape == original_shape
 

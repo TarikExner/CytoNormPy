@@ -69,7 +69,9 @@ class DataReaderFCS(DataReader):
         A :class:`cytonormpy.FCSFile`
         """
         return FCSFile(
-            input_directory=self._input_dir, file_name=file_name, truncate_max_range=self._truncate_max_range
+            input_directory=self._input_dir,
+            file_name=file_name,
+            truncate_max_range=self._truncate_max_range,
         )
 
 

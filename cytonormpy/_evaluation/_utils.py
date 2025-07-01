@@ -83,7 +83,9 @@ def _parse_anndata_dfs(
         adata.obs[sample_identifier_column].isin(file_list), sample_identifier_column
     ].tolist()
     if cell_labels is not None:
-        df["label"] = adata.obs.loc[adata.obs[sample_identifier_column].isin(file_list), cell_labels].tolist()
+        df["label"] = adata.obs.loc[
+            adata.obs[sample_identifier_column].isin(file_list), cell_labels
+        ].tolist()
     else:
         df["label"] = "all_cells"
 
