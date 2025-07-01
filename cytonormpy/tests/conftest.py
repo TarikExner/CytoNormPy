@@ -18,6 +18,7 @@ def DATAHANDLER_DEFAULT_KWARGS():
         "reference_value": "ref",
         "batch_column": "batch",
         "sample_identifier_column": "file_name",
+        "n_cells_reference": 100,
         "channels": "markers"
     }
 

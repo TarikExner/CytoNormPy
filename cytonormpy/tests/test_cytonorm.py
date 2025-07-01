@@ -11,7 +11,6 @@ import warnings
 from cytonormpy._transformation._transformations import AsinhTransformer, Transformer
 from cytonormpy._clustering._cluster_algorithms import FlowSOM, ClusterBase
 from cytonormpy._dataset._dataset import DataHandlerFCS, DataHandlerAnnData
-from cytonormpy._cytonorm._cytonorm import ClusterCVWarning
 from cytonormpy._normalization._quantile_calc import ExpressionQuantiles
 
 
@@ -102,7 +101,7 @@ def test_for_normalized_files_fcs(metadata: pd.DataFrame,
     cn.calculate_splines(limits = [0,8])
     cn.normalize_data()
 
-    all_file_names = cn._datahandler.all_file_names
+    all_file_names = cn._datahandler.metadata.all_file_names
     assert isinstance(cn._datahandler, DataHandlerFCS)
     norm_file_names = [f"{cn._datahandler._prefix}_{file}" for file in all_file_names]
     assert all((tmp_path / file).exists() for file in norm_file_names)
@@ -643,4 +642,6 @@ def test_all_zero_quantiles_are_converted_to_IDSpline(metadata: pd.DataFrame,
         assert spline.spline_calc_function.__qualname__ == "IdentitySpline"
 
     
-
+def test_validate_batch_references_warning():
+    # refers to validate_batch_references to display a warning, not a ValueError
+    pass

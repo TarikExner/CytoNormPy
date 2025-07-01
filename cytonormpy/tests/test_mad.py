@@ -29,7 +29,7 @@ def test_data_setup_fcs(INPUT_DIR,
     df = cn.mad_frame
     assert all(ch in df.columns for ch in cn._datahandler.channels)
     assert all(entry in df.index.names for entry in ["file_name", "origin", "label"])
-    assert df.shape[0] == len(cn._datahandler.validation_file_names)*2
+    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names)*2
 
     cn.calculate_mad(groupby = "label")
     df = cn.mad_frame
@@ -40,7 +40,7 @@ def test_data_setup_fcs(INPUT_DIR,
     assert df.shape[0] == 2
 
     label_dict = {}
-    for file in cn._datahandler.validation_file_names:
+    for file in cn._datahandler.metadata.validation_file_names:
         labels = _generate_cell_labels()
         label_dict[file] = labels
         label_dict["Norm_" + file] = labels
@@ -73,7 +73,7 @@ def test_data_setup_anndata(data_anndata):
     df = cn.mad_frame
     assert all(ch in df.columns for ch in cn._datahandler.channels)
     assert all(entry in df.index.names for entry in ["file_name", "origin", "label"])
-    assert df.shape[0] == len(cn._datahandler.validation_file_names)*2
+    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names)*2
 
     cn.calculate_mad(groupby = "label")
     df = cn.mad_frame
@@ -89,7 +89,7 @@ def test_data_setup_anndata(data_anndata):
         label in df.index.get_level_values("label").unique().tolist()
         for label in CELL_LABELS + ["all_cells"]
     )
-    assert df.shape[0] == len(cn._datahandler.validation_file_names)*2*(len(CELL_LABELS)+1)
+    assert df.shape[0] == len(cn._datahandler.metadata.validation_file_names)*2*(len(CELL_LABELS)+1)
 
 
 def test_r_python_mad():

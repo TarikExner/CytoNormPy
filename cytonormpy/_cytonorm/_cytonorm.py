@@ -19,7 +19,8 @@ from .._evaluation import (mad_from_fcs,
 
 from .._dataset._dataset import (DataHandlerFCS,
                                  DataHandler,
-                                 DataHandlerAnnData)
+                                 DataHandlerAnnData,
+                                 DataProviderFCS)
 
 from .._transformation._transformations import Transformer
 
@@ -88,7 +89,7 @@ class CytoNorm:
 
     def __init__(self) -> None:
         self._transformer = None
-        self._clustering = None
+        self._clustering: Optional[ClusterBase] = None
 
     def run_fcs_data_setup(self,
                            metadata: Union[pd.DataFrame, PathLike],
@@ -98,6 +99,7 @@ class CytoNorm:
                            batch_column: str = "batch",
                            sample_identifier_column: str = "file_name",
                            channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
+                           n_cells_reference: Optional[int] = None,
                            truncate_max_range: bool = True,
                            output_directory: Optional[PathLike] = None,
                            prefix: str = "Norm"
@@ -132,6 +134,10 @@ class CytoNorm:
         sample_identifier_column
             Specifies the column in the metadata that is unique to the samples.
             Defaults to 'file_name'.
+        n_cells_reference
+            If there are no reference samples for a batch, this number will
+            define how many cells from a batch are subsampled to comprise the
+            new reference file.
         channels
             Can be a list of detectors (e.g. BV421-A), a single
             channel or 'all' or 'markers'. If `markers`, channels
@@ -174,6 +180,7 @@ class CytoNorm:
                           reference_value: str = "ref",
                           batch_column: str = "batch",
                           sample_identifier_column: str = "file_name",
+                          n_cells_reference: Optional[int] = None,
                           channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
                           key_added: str = "cyto_normalized",
                           copy: bool = False
@@ -199,6 +206,10 @@ class CytoNorm:
             The column in `adata.obs` that specifies the batch.
         sample_identifier_column
             Specifies the column in `adata.obs` that is unique to the samples.
+        n_cells_reference
+            If there are no reference samples for a batch, this number will
+            define how many cells from a batch are subsampled to comprise the
+            new reference file.
         channels
             Can be a list of detectors (e.g. BV421-A), a single
             channel or 'all' or 'markers'. If `markers`, channels
@@ -260,7 +271,7 @@ class CytoNorm:
         None
 
         """
-        self._clustering: ClusterBase = clusterer
+        self._clustering: Optional[ClusterBase] = clusterer
 
     def run_clustering(self,
                        n_cells: Optional[int] = None,
@@ -309,7 +320,8 @@ class CytoNorm:
 
         # we switch to numpy
         train_data = train_data_df.to_numpy(copy = True)
-
+        
+        assert self._clustering is not None
         self._clustering.train(X = train_data,
                                **kwargs)
 
@@ -329,7 +341,7 @@ class CytoNorm:
         if test_cluster_cv:
             appropriate = _all_cvs_below_cutoff(
                 df = self._datahandler.get_ref_data_df(),
-                sample_key = self._datahandler._sample_identifier_column,
+                sample_key = self._datahandler.metadata.sample_identifier_column,
                 cluster_key = "clusters",
                 cv_cutoff = cluster_cv_threshold
             )
@@ -666,7 +678,7 @@ class CytoNorm:
         """
         df = self._datahandler.get_dataframe(file_name = file)
 
-        batch = self._datahandler.get_batch(file_name = file)
+        batch = self._datahandler.metadata.get_batch(file_name = file)
 
         df = self._normalize_file(df = df,
                                   batch = batch)
@@ -711,11 +723,12 @@ class CytoNorm:
         """
         if adata is not None:
             assert isinstance(self._datahandler, DataHandlerAnnData)
+            assert not isinstance(self._datahandler._provider, DataProviderFCS)
             self._datahandler.adata = adata
-            self._datahandler._provider._adata = adata
+            self._datahandler._provider.adata = adata
 
         if file_names is None:
-            file_names = self._datahandler.all_file_names
+            file_names = self._datahandler.metadata.all_file_names
         else:
             assert batches is not None
             if not isinstance(file_names, list):
@@ -725,7 +738,7 @@ class CytoNorm:
             if not len(file_names) == len(batches):
                 raise ValueError("Please provide a batch for every file.")
             for file_name, batch in zip(file_names, batches):
-                self._datahandler._add_file(file_name, batch)
+                self._datahandler.add_file(file_name, batch)
 
         with cf.ThreadPoolExecutor(max_workers = n_jobs) as p:
             # don't remove this syntax where we loop through
@@ -810,9 +823,9 @@ class CytoNorm:
         }
 
         if files == "validation":
-            _files = self._datahandler.validation_file_names
+            _files = self._datahandler.metadata.validation_file_names
         elif files == "all":
-            _files = self._datahandler.all_file_names
+            _files = self._datahandler.metadata.all_file_names
         else:
             raise ValueError(f"files has to be one of ['validation', 'all'], you entered {files}")
 
@@ -869,7 +882,7 @@ class CytoNorm:
                 file_list = _files,
                 orig_layer = self._datahandler._layer,
                 norm_layer = self._datahandler._key_added,
-                sample_identifier_column = self._datahandler._sample_identifier_column,
+                sample_identifier_column = self._datahandler.metadata.sample_identifier_column,
                 **general_kwargs
             )
 
@@ -906,9 +919,9 @@ class CytoNorm:
         }
 
         if files == "validation":
-            _files = self._datahandler.validation_file_names
+            _files = self._datahandler.metadata.validation_file_names
         elif files == "all":
-            _files = self._datahandler.all_file_names
+            _files = self._datahandler.metadata.all_file_names
         else:
             raise ValueError(f"files has to be one of ['validation', 'all'], you entered {files}")
 
@@ -965,7 +978,7 @@ class CytoNorm:
                 file_list = _files,
                 orig_layer = self._datahandler._layer,
                 norm_layer = self._datahandler._key_added,
-                sample_identifier_column = self._datahandler._sample_identifier_column,
+                sample_identifier_column = self._datahandler.metadata.sample_identifier_column,
                 **general_kwargs
             )
 
@@ -986,5 +999,3 @@ def read_model(filename: Union[PathLike, str]) -> CytoNorm:
     with open(filename, "rb") as file:
         cytonorm_obj = pickle.load(file)
     return cytonorm_obj
-
-

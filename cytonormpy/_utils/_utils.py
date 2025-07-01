@@ -292,8 +292,7 @@ def regularize_values(x: np.ndarray,
 def _all_batches_have_reference(df: pd.DataFrame,
                                 reference: str,
                                 batch: str,
-                                ref_control_value: Optional[str]
-                                ) -> bool:
+                                ref_control_value: Optional[str]) -> bool:
     """
     Function checks if there are samples labeled ref_control_value
     for each batch.
