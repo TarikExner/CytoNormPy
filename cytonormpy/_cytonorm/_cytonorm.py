@@ -86,6 +86,7 @@ class CytoNorm:
     def __init__(self) -> None:
         self._transformer = None
         self._clustering: Optional[ClusterBase] = None
+        self._markers_for_clustering = []
 
     def run_fcs_data_setup(
         self,
@@ -306,6 +307,7 @@ class CytoNorm:
         None
 
         """
+        self._markers_for_clustering = markers if markers is not None else []
 
         if n_cells is not None:
             train_data_df = self._datahandler.get_ref_data_df_subsampled(markers=markers, n=n_cells)
@@ -568,12 +570,11 @@ class CytoNorm:
     def _normalize_file(self, df: pd.DataFrame, batch: str) -> pd.DataFrame:
         """\
         Private function to run the normalization. Can be
-        called from self.normalize_data() and self.normalize_file().
+        called from self.normalize_data() and self._normalize_file().
         """
 
-        data = df.to_numpy(copy=True)
-
         if self._clustering is not None:
+            data = df[self._markers_for_clustering].to_numpy(copy=True)
             df["clusters"] = self._clustering.calculate_clusters(data)
         else:
             df["clusters"] = -1

@@ -59,17 +59,15 @@ class DataHandler:
     def get_ref_data_df(self, markers: Optional[Union[list[str], str]] = None) -> pd.DataFrame:
         """Returns the reference data frame."""
         # cytonorm 2.0: select channels you want for clustering
-        if markers is None:
-            markers = []
+        if not markers:
+            return self.ref_data_df
+
         if not isinstance(markers, list):
             # weird edge case if someone passes only one marker
             markers = [markers]
-
         # safety measure: we use the _select channel function
         markers = self._select_channels(markers)
-        if markers:
-            return cast(pd.DataFrame, self.ref_data_df[markers])
-        return self.ref_data_df
+        return cast(pd.DataFrame, self.ref_data_df[markers])
 
     def get_ref_data_df_subsampled(self, n: int, markers: Optional[Union[list[str], str]] = None):
         """Returns the reference data frame, subsampled to `n` events."""

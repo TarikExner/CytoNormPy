@@ -54,6 +54,10 @@ def test_run_clustering_with_markers(data_anndata: AnnData, detector_subset: lis
     )
     assert "clusters" in cn._datahandler.ref_data_df.index.names
     assert cn._datahandler.ref_data_df.shape == original_shape
+    # we check if the rest works
+    cn.calculate_quantiles()
+    cn.calculate_splines()
+    cn.normalize_data()
 
 
 def test_wrong_input_shape_for_clustering(data_anndata: AnnData, detector_subset: list[str]):
@@ -62,6 +66,8 @@ def test_wrong_input_shape_for_clustering(data_anndata: AnnData, detector_subset
     cn.add_transformer(AsinhTransformer())
     cn.add_clusterer(FlowSOM())
     flowsom = cn._clustering
+    assert flowsom is not None
+
     train_data_df = cn._datahandler.get_ref_data_df(markers=detector_subset)
     assert train_data_df.shape[1] == len(detector_subset)
     train_array = train_data_df.to_numpy(copy=True)

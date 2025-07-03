@@ -8,7 +8,7 @@
 [link-tests]: https://github.com/TarikExner/CytoNormPy/actions/workflows/pytest.yml
 [badge-docs]: https://img.shields.io/readthedocs/cytonormpy
 
-A python port for the CytoNorm R library.
+A python port for the CytoNorm (2.0) R library.
 
 # Installation
 

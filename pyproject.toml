@@ -27,7 +27,8 @@ dependencies = [
     "pandas",
     "flowio",
     "flowutils",
-    "flowsom@git+https://github.com/saeyslab/FlowSOM_Python"
+    "flowsom"
+    # "flowsom@git+https://github.com/saeyslab/FlowSOM_Python"
 ]
 
 [project.optional-dependencies]
