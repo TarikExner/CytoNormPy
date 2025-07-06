@@ -42,6 +42,6 @@ def _calculate_cluster_cv(df: pd.DataFrame, cluster_key: str, sample_key) -> lis
     sample_sizes = df.groupby(sample_key, observed=True).size()
     percentages = pd.DataFrame(value_counts / sample_sizes, columns=["perc"])
     cluster_by_sample = percentages.pivot_table(
-        values="perc", index=sample_key, columns=cluster_key
+        values="perc", index=sample_key, columns=cluster_key, fill_value=0
     )
-    return list(cluster_by_sample.std() / cluster_by_sample.mean())
+    return list(cluster_by_sample.std(axis = 0, ddof = 1) / cluster_by_sample.mean(axis = 0))

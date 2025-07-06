@@ -1,11 +1,12 @@
 import numpy as np
+import warnings
 
+from abc import abstractmethod
 from flowsom.models import FlowSOMEstimator
+from sklearn.base import clone
 from sklearn.cluster import KMeans as knnclassifier
 from sklearn.cluster import AffinityPropagation as affinitypropagationclassifier
 from sklearn.cluster import MeanShift as meanshiftclassifier
-
-from abc import abstractmethod
 
 
 class ClusterBase:
@@ -23,6 +24,10 @@ class ClusterBase:
 
     @abstractmethod
     def calculate_clusters(self, X: np.ndarray, **kwargs) -> np.ndarray:
+        pass
+
+    @abstractmethod
+    def calculate_clusters_multiple(self, X: np.ndarray, n_clusters: list[int]) -> np.ndarray:
         pass
 
 
@@ -89,6 +94,35 @@ class FlowSOM(ClusterBase):
         """
         return self.est.predict(X, **kwargs)
 
+    def calculate_clusters_multiple(self, X: np.ndarray, n_clusters: list[int]):
+        """\
+        Calculates the clusters for a given metacluster number. The estimator
+        will calculate a SOM once, then fit the ConsensusCluster class given
+        the n_metaclusters that are provided.
+
+        Parameters
+        ----------
+        X
+            The data that are supposed to be predicted.
+        n_metaclusters
+            A list of integers specifying the number of metaclusters per test.
+
+        Returns
+        -------
+        Cluster annotations stored in a :class:`np.ndarray`, where the n_metacluster
+        denotes the column and the rows are the individual cells.
+
+        """
+        self.est.cluster_model.fit(X)
+        y_clusters = self.est.cluster_model.predict(X)
+        X_codes = self.est.cluster_model.codes
+        assignments = np.empty((X.shape[0], len(n_clusters)), dtype = np.int16)
+        for j, n_mc in enumerate(n_clusters):
+            self.est.set_n_clusters(n_mc)
+            y_codes = self.est.metacluster_model.fit_predict(X_codes)
+            assignments[:, j] = y_codes[y_clusters]
+        return assignments
+
 
 class MeanShift(ClusterBase):
     """\
@@ -108,8 +142,6 @@ class MeanShift(ClusterBase):
 
     def __init__(self, **kwargs):
         super().__init__()
-        if "random_state" not in kwargs:
-            kwargs["random_state"] = 187
         self.est = meanshiftclassifier(**kwargs)
 
     def train(self, X: np.ndarray, **kwargs):
@@ -149,7 +181,28 @@ class MeanShift(ClusterBase):
         """
         return self.est.predict(X, **kwargs)
 
+    def calculate_clusters_multiple(self, X: np.ndarray, n_clusters: list[int]):
+        """
+        MeanShift ignores n_clusters: warns if len(n_clusters)>1,
+        then returns the same assignment in each column.
+        """
+        if len(n_clusters) > 1:
+            warnings.warn(
+                "MeanShift: ignoring requested n_clusters list, "
+                "producing identical assignments for each entry.",
+                UserWarning,
+                stacklevel=2
+            )
 
+        n_samples = X.shape[0]
+        out = np.empty((n_samples, len(n_clusters)), dtype=int)
+
+        for j in range(len(n_clusters)):
+            est = clone(self.est)
+            est.fit(X)
+            out[:, j] = est.predict(X)
+
+        return out
 class KMeans(ClusterBase):
     """\
     Class to perform KMeans clustering.
@@ -209,6 +262,22 @@ class KMeans(ClusterBase):
         """
         return self.est.predict(X, **kwargs)
 
+    def calculate_clusters_multiple(self, X: np.ndarray, n_clusters: list[int]):
+        """
+        Returns an array of shape (n_samples, len(n_clusters)),
+        where each column i is the cluster‐assignment vector
+        for KMeans(n_clusters=n_clusters[i]).
+        """
+        n_samples = X.shape[0]
+        out = np.empty((n_samples, len(n_clusters)), dtype=int)
+
+        for j, k in enumerate(n_clusters):
+            est = clone(self.est)
+            est.set_params(n_clusters=k)
+            est.fit(X)
+            out[:, j] = est.predict(X)
+
+        return out
 
 class AffinityPropagation(ClusterBase):
     """\
@@ -268,3 +337,26 @@ class AffinityPropagation(ClusterBase):
 
         """
         return self.est.predict(X, **kwargs)
+
+    def calculate_clusters_multiple(self, X: np.ndarray, n_clusters: list[int]):
+        """
+        AffinityPropagation ignores n_clusters: warns if len(n_clusters)>1,
+        then returns the same assignment for each entry.
+        """
+        if len(n_clusters) > 1:
+            warnings.warn(
+                "AffinityPropagation: ignoring requested n_clusters list, "
+                "producing identical assignments for each entry.",
+                UserWarning,
+                stacklevel=2
+            )
+
+        n_samples = X.shape[0]
+        out = np.empty((n_samples, len(n_clusters)), dtype=int)
+
+        for j in range(len(n_clusters)):
+            est = clone(self.est)
+            est.fit(X)
+            out[:, j] = est.predict(X)
+
+        return out

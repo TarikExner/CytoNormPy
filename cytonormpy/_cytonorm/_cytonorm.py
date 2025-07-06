@@ -1,14 +1,15 @@
-import pandas as pd
-from typing import Union, Optional, Literal
-from os import PathLike
 import numpy as np
-from anndata import AnnData
+import pandas as pd
 import pickle
 import warnings
 
+from anndata import AnnData
+from typing import Union, Optional, Literal, cast
+from os import PathLike
+
 import concurrent.futures as cf
 
-from ._utils import _all_cvs_below_cutoff, ClusterCVWarning
+from ._utils import _all_cvs_below_cutoff, _calculate_cluster_cv, ClusterCVWarning
 
 from .._evaluation import (
     mad_from_fcs,
@@ -270,6 +271,19 @@ class CytoNorm:
         """
         self._clustering: Optional[ClusterBase] = clusterer
 
+    def _prepare_training_data_for_clustering(self,
+                                              n_cells: Optional[int] = None,
+                                              markers: Optional[list[str]] = None) -> tuple[pd.DataFrame, np.ndarray]:
+        if n_cells is not None:
+            train_data_df = self._datahandler.get_ref_data_df_subsampled(markers=markers, n=n_cells)
+        else:
+            train_data_df = self._datahandler.get_ref_data_df(markers=markers)
+
+        # we switch to numpy
+        train_data = train_data_df.to_numpy(copy=True)
+
+        return train_data_df, train_data
+
     def run_clustering(
         self,
         n_cells: Optional[int] = None,
@@ -309,13 +323,7 @@ class CytoNorm:
         """
         self._markers_for_clustering = markers if markers is not None else []
 
-        if n_cells is not None:
-            train_data_df = self._datahandler.get_ref_data_df_subsampled(markers=markers, n=n_cells)
-        else:
-            train_data_df = self._datahandler.get_ref_data_df(markers=markers)
-
-        # we switch to numpy
-        train_data = train_data_df.to_numpy(copy=True)
+        train_data_df, train_data = self._prepare_training_data_for_clustering(n_cells, markers)
 
         assert self._clustering is not None
         self._clustering.train(X=train_data, **kwargs)
@@ -345,6 +353,64 @@ class CytoNorm:
                 msg += "Calculating the quantiles on clusters "
                 msg += "may not be appropriate. "
                 warnings.warn(msg, ClusterCVWarning)
+
+    def calculate_cluster_cvs(self,
+                              n_metaclusters: list[int],
+                              n_cells: Optional[int] = None,
+                              markers: Optional[list[str]] = None,
+                              ):
+        """
+        Compute per-cluster coefficient of variation (CV) across samples for multiple meta-cluster counts.
+
+        This method obtains reference data (optionally subsampled), runs clustering
+        for each specified number of meta-clusters, and then, for each clustering,
+        calculates the fraction of cells from each sample assigned to each cluster.
+        It computes the CV (standard deviation divided by mean) of these fractions
+        across samples for each cluster. The results are stored in the `cvs_by_k`
+        attribute for downstream threshold checks or plotting.
+
+        Parameters
+        ----------
+        n_metaclusters : list of int
+            List of meta-cluster counts to evaluate (e.g., [5, 15, 25]).
+        n_cells : int, optional
+            Number of reference cells to subsample before clustering. If None,
+            all reference cells are used.
+        markers : list of str, optional
+            List of channel names to include in clustering. If None, all available
+            channels are used.
+
+        Returns
+        -------
+        None
+            The computed CVs are saved to `self.cvs_by_k`, a dict mapping each
+            meta-cluster count k to a list of length k containing the CV for each cluster.
+
+        Attributes
+        ----------
+        cvs_by_k : dict[int, list[float]]
+            After calling this method, holds the CV values for each tested k:
+            `{k: [cv_cluster_1, cv_cluster_2, …, cv_cluster_k]}`.
+        """
+
+        train_data_df, X = self._prepare_training_data_for_clustering(n_cells, markers)
+        
+        assert self._clustering is not None
+        mc_array = self._clustering.calculate_clusters_multiple(X, n_metaclusters)
+        mc_df = pd.DataFrame(columns = n_metaclusters, data = mc_array, index = train_data_df.index)
+        mc_df = mc_df.reset_index()
+        
+        cluster_key = "cluster"
+        sample_key = self._datahandler.metadata.sample_identifier_column
+        cvs_by_k = {}
+        for k in n_metaclusters:
+            tmp = cast(pd.DataFrame, mc_df[[sample_key, k]])
+            tmp = tmp.rename(columns = {k: cluster_key})
+            cvs_by_k[k] = _calculate_cluster_cv(tmp, cluster_key, sample_key)
+
+        self.cvs_by_k = cvs_by_k
+
+        return
 
     def calculate_quantiles(
         self,
