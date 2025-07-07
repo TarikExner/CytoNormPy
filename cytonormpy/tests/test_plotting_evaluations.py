@@ -8,36 +8,38 @@ from matplotlib.collections import PathCollection
 
 import cytonormpy._plotting._evaluations as eval_mod
 from cytonormpy._plotting._evaluations import emd, mad
+import cytonormpy._plotting._utils as utils_mod
 
 import cytonormpy as cnp
 
 
 @pytest.fixture(autouse=True)
 def patch_helpers(monkeypatch):
+    # silence plt.show()
     monkeypatch.setattr(plt, "show", lambda *a, **k: None)
 
-    monkeypatch.setattr(eval_mod, "set_scatter_defaults", lambda kwargs: kwargs)
-    monkeypatch.setattr(eval_mod, "modify_axes", lambda *a, **k: None)
-    monkeypatch.setattr(eval_mod, "modify_legend", lambda *a, **k: None)
+    # Stub out the common helpers in utils
+    monkeypatch.setattr(utils_mod, "set_scatter_defaults", lambda kwargs: kwargs)
+    monkeypatch.setattr(utils_mod, "modify_axes",         lambda *a, **k: None)
+    monkeypatch.setattr(utils_mod, "modify_legend",       lambda *a, **k: None)
 
+    # Now stub only the private internals in evaluations
     def real_check(df, grid_by):
         if grid_by is not None and df[grid_by].nunique() == 1:
             raise ValueError("Only one unique value for the grid variable. A Grid is not possible.")
-
     monkeypatch.setattr(eval_mod, "_check_grid_appropriate", real_check)
 
     monkeypatch.setattr(
-        eval_mod, "_prepare_evaluation_frame", lambda dataframe, **kw: dataframe.copy()
+        eval_mod,
+        "_prepare_evaluation_frame",
+        lambda dataframe, **kw: dataframe.copy()
     )
-
-    monkeypatch.setattr(eval_mod, "_draw_comp_line", lambda ax: None)
-    monkeypatch.setattr(eval_mod, "_draw_cutoff_line", lambda ax, cutoff=None: None)
+    monkeypatch.setattr(eval_mod, "_draw_comp_line",     lambda ax: None)
+    monkeypatch.setattr(eval_mod, "_draw_cutoff_line",   lambda ax, cutoff=None: None)
 
     def fake_gen(df, grid_by, grid_n_cols, figsize, colorby, **kw):
         fig, axes = plt.subplots(1, 2, figsize=(4, 2))
-        axes = np.array(axes)
-        return fig, axes
-
+        return fig, np.array(axes)
     monkeypatch.setattr(eval_mod, "_generate_scatter_grid", fake_gen)
 
     monkeypatch.setattr(

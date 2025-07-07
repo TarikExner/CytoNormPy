@@ -51,6 +51,21 @@ def cv_heatmap(
     Figure or Axes or None
         If `return_fig`, returns the Figure; else returns the Axes.
         If both are False, returns None.
+
+    Examples
+    --------
+    .. plot::
+        :context: close-figs
+
+        import cytonormpy as cnp
+
+        cn = cnp.example_cytonorm(use_clustering = True)
+        cn.calculate_cluster_cvs(n_metaclusters = list(range(3,15)))
+        cnp.pl.cv_heatmap(cn,
+                          n_metaclusters = list(range(3,15)),
+                          max_cv = 2,
+                          figsize = (4,3)
+                          )
     """
     if not hasattr(cnp, "cvs_by_k"):
         cnp.calculate_cluster_cvs(n_metaclusters)
@@ -74,7 +89,7 @@ def cv_heatmap(
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
-        fig = (None,)
+        fig = ax.figure
         ax = ax
 
     assert ax is not None

@@ -336,3 +336,55 @@ def test_marker_selection_subsampled_filters_and_counts(
     dh = datahandleranndata
     df = dh.get_ref_data_df_subsampled(markers=detector_subset, n=10)
     assert df.shape == (10, len(detector_subset))
+
+def test_no_reference_files_all_artificial_fcs(metadata: pd.DataFrame, INPUT_DIR: Path):
+    # Relabel every sample as non‐reference
+    md = metadata.copy()
+    md["reference"] = "other"  # nothing equals the default 'ref'
+    n_cells_reference = 200
+
+    dh = DataHandlerFCS(
+        metadata=md,
+        input_directory=INPUT_DIR,
+        channels="markers",
+        n_cells_reference=n_cells_reference,
+    )
+
+    df = dh.ref_data_df
+    # Expect one artificial block per batch
+    unique_batches = md["batch"].unique()
+    assert df.shape[0] == n_cells_reference * len(unique_batches)
+
+    # And each artificial block should carry exactly n_cells_reference rows
+    samp_col = dh.metadata.sample_identifier_column
+    idx_samples = df.index.get_level_values(samp_col)
+    for batch in unique_batches:
+        label = f"__B_{batch}_CYTONORM_GENERATED__"
+        assert (idx_samples == label).sum() == n_cells_reference
+
+
+def test_no_reference_files_all_artificial_anndata(
+    data_anndata: AnnData, DATAHANDLER_DEFAULT_KWARGS: dict
+):
+    # Copy the AnnData and relabel all obs as non‐reference
+    ad = data_anndata.copy()
+    kw = DATAHANDLER_DEFAULT_KWARGS.copy()
+    rc = kw["reference_column"]
+    ad.obs[rc] = "other"  # override every row
+
+    n_cells_reference = 150
+    kw["n_cells_reference"] = n_cells_reference
+
+    dh = DataHandlerAnnData(adata=ad, **kw)
+
+    df = dh.ref_data_df
+    # One artificial block per batch
+    unique_batches = ad.obs[kw["batch_column"]].unique()
+    assert df.shape[0] == n_cells_reference * len(unique_batches)
+
+    # Each block labeled correctly at the sample‐identifier level
+    samp_col = kw["sample_identifier_column"]
+    idx_samples = df.index.get_level_values(samp_col)
+    for batch in unique_batches:
+        label = f"__B_{batch}_CYTONORM_GENERATED__"
+        assert (idx_samples == label).sum() == n_cells_reference

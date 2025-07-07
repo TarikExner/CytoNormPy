@@ -82,7 +82,7 @@ def splineplot(
 
         cn = cnp.example_cytonorm()
         cnp.pl.splineplot(cn,
-                          cn._datahandler.validation_file_names[0],
+                          cn._datahandler.metadata.validation_file_names[0],
                           channel = "Tb159Di",
                           x_scale = "linear",
                           y_scale = "linear",

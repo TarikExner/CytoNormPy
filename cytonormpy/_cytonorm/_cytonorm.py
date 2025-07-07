@@ -166,6 +166,7 @@ class CytoNorm:
             reference_value=reference_value,
             batch_column=batch_column,
             sample_identifier_column=sample_identifier_column,
+            n_cells_reference = n_cells_reference,
             transformer=self._transformer,
             truncate_max_range=truncate_max_range,
             output_directory=output_directory,
@@ -232,6 +233,7 @@ class CytoNorm:
             reference_value=reference_value,
             batch_column=batch_column,
             sample_identifier_column=sample_identifier_column,
+            n_cells_reference = n_cells_reference,
             channels=channels,
             key_added=key_added,
             transformer=self._transformer,
@@ -641,7 +643,10 @@ class CytoNorm:
         """
 
         if self._clustering is not None:
-            data = df[self._markers_for_clustering].to_numpy(copy=True)
+            if self._markers_for_clustering:
+                data = df[self._markers_for_clustering].to_numpy(copy=True)
+            else:
+                data = df.to_numpy(copy = True)
             df["clusters"] = self._clustering.calculate_clusters(data)
         else:
             df["clusters"] = -1

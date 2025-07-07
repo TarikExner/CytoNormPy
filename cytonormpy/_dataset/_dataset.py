@@ -87,9 +87,12 @@ class DataHandler:
         Creates the reference dataframe by concatenating the reference files
         and a subsample of files of batch w/o references
         """
-        original_references = pd.concat(
-            [self.get_dataframe(file) for file in self.metadata.ref_file_names], axis=0
-        )
+        if self.metadata.ref_file_names:
+            original_references = pd.concat(
+                [self.get_dataframe(file) for file in self.metadata.ref_file_names], axis=0
+            )
+        else:
+            original_references = pd.DataFrame()
 
         # cytonorm 2.0: Construct the reference from a subset of all files per batch
         artificial_reference_dict = self.metadata.reference_assembly_dict
@@ -98,18 +101,25 @@ class DataHandler:
             df = pd.concat(
                 [self.get_dataframe(file) for file in artificial_reference_dict[batch]], axis=0
             )
-            df = df.sample(n=self.n_cells_reference, random_state=187)
+            if not self.n_cells_reference:
+                n_cells_reference = int(0.1 * df.shape[0])
+            else:
+                n_cells_reference = self.n_cells_reference
+            df = df.sample(n=n_cells_reference, random_state=187)
 
             old_idx = df.index
             names = old_idx.names
             assert old_idx.names[2] == self.metadata.sample_identifier_column
+            assert old_idx.names[0] == self.metadata.reference_column
 
             label = f"__B_{batch}_CYTONORM_GENERATED__"
+            ref_label = self.metadata.reference_value
             n = len(df)
             new_sample_vals = [label] * n
+            new_ref_labels = [ref_label] * n
 
             new_idx = pd.MultiIndex.from_arrays(
-                [old_idx.get_level_values(0), old_idx.get_level_values(1), new_sample_vals],
+                [new_ref_labels, old_idx.get_level_values(1), new_sample_vals],
                 names=names,
             )
             df.index = new_idx

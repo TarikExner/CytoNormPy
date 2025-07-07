@@ -52,7 +52,7 @@ def emd_comparison_from_anndata(
     kwargs = locals()
     orig_layer = kwargs.pop("orig_layer")
     norm_layer = kwargs.pop("norm_layer")
-    orig_df = emd_from_anndata(origin="unnormalized", layer=orig_layer, **kwargs)
+    orig_df = emd_from_anndata(origin="original", layer=orig_layer, **kwargs)
     norm_df = emd_from_anndata(origin="normalized", layer=norm_layer, **kwargs)
 
     return pd.concat([orig_df, norm_df], axis=0)
@@ -206,7 +206,7 @@ def emd_from_fcs(
         If `True`, FCS data will be truncated to the range specified
         in the PnR values of the file.
     origin
-        Annotates the files with their origin, e.g. 'original' or 'normalized'.
+        Annotates the files with their origin, e.g. 'unnormalized' or 'normalized'.
     transformer
         An instance of the cytonormpy transformers.
 

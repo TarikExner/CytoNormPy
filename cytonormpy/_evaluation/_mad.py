@@ -66,7 +66,7 @@ def mad_comparison_from_anndata(
     kwargs = locals()
     orig_layer = kwargs.pop("orig_layer")
     norm_layer = kwargs.pop("norm_layer")
-    orig_df = mad_from_anndata(origin="unnormalized", layer=orig_layer, **kwargs)
+    orig_df = mad_from_anndata(origin="original", layer=orig_layer, **kwargs)
     norm_df = mad_from_anndata(origin="normalized", layer=norm_layer, **kwargs)
 
     return pd.concat([orig_df, norm_df], axis=0)

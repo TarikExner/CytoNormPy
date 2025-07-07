@@ -22,21 +22,30 @@ Main tasks have been divided into the following classes:
 
 ```
 
+<br/><br/>
+Plotting utilities
+==================
+All of the core plotting functions live in the small `pl` submodule:
 
 ```{eval-rst}
-
-.. currentmodule:: cytonormpy
+.. currentmodule:: cytonormpy.pl
 
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    
-    Plotter
+
+    scatter
+    histogram
+    cv_heatmap
+    emd
+    mad
+    splineplot
 
 ```
 
-
 <br/><br/>
+Clustering utilities
+==================
 Clustering can be achieved using one the four implemented clustering algorithms:
 
 ```{eval-rst}

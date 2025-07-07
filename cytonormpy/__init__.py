@@ -1,7 +1,7 @@
+import sys
 from ._cytonorm import CytoNorm, example_cytonorm, example_anndata
 from ._dataset import FCSFile
 from ._clustering import FlowSOM, KMeans, MeanShift, AffinityPropagation
-from . import _plotting as pl
 from ._transformation import (
     AsinhTransformer,
     HyperLogTransformer,
@@ -20,6 +20,17 @@ from ._evaluation import (
     emd_from_anndata,
     emd_comparison_from_anndata,
 )
+from . import _plotting as pl
+from ._plotting import (
+    scatter,
+    histogram,
+    emd,
+    mad,
+    cv_heatmap,
+    splineplot
+)
+
+sys.modules.update({f'{__name__}.{m}': globals()[m] for m in ['pl']})
 
 __all__ = [
     "CytoNorm",
@@ -45,6 +56,12 @@ __all__ = [
     "emd_from_anndata",
     "emd_comparison_from_anndata",
     "pl",
+    "scatter",
+    "histogram",
+    "emd",
+    "mad",
+    "cv_heatmap",
+    "splineplot"
 ]
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
