@@ -116,7 +116,7 @@ class FlowSOM(ClusterBase):
         self.est.cluster_model.fit(X)
         y_clusters = self.est.cluster_model.predict(X)
         X_codes = self.est.cluster_model.codes
-        assignments = np.empty((X.shape[0], len(n_clusters)), dtype = np.int16)
+        assignments = np.empty((X.shape[0], len(n_clusters)), dtype=np.int16)
         for j, n_mc in enumerate(n_clusters):
             self.est.set_n_clusters(n_mc)
             y_codes = self.est.metacluster_model.fit_predict(X_codes)
@@ -191,7 +191,7 @@ class MeanShift(ClusterBase):
                 "MeanShift: ignoring requested n_clusters list, "
                 "producing identical assignments for each entry.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
         n_samples = X.shape[0]
@@ -203,6 +203,8 @@ class MeanShift(ClusterBase):
             out[:, j] = est.predict(X)
 
         return out
+
+
 class KMeans(ClusterBase):
     """\
     Class to perform KMeans clustering.
@@ -279,6 +281,7 @@ class KMeans(ClusterBase):
 
         return out
 
+
 class AffinityPropagation(ClusterBase):
     """\
     Class to perform AffinityPropagation clustering.
@@ -348,7 +351,7 @@ class AffinityPropagation(ClusterBase):
                 "AffinityPropagation: ignoring requested n_clusters list, "
                 "producing identical assignments for each entry.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
         n_samples = X.shape[0]

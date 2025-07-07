@@ -1,6 +1,7 @@
 from ._cytonorm import CytoNorm, example_cytonorm, example_anndata
 from ._dataset import FCSFile
 from ._clustering import FlowSOM, KMeans, MeanShift, AffinityPropagation
+from . import _plotting as pl
 from ._transformation import (
     AsinhTransformer,
     HyperLogTransformer,
@@ -8,7 +9,6 @@ from ._transformation import (
     LogicleTransformer,
     Transformer,
 )
-from ._plotting import Plotter
 from ._cytonorm import read_model
 from ._evaluation import (
     mad_from_fcs,
@@ -20,7 +20,6 @@ from ._evaluation import (
     emd_from_anndata,
     emd_comparison_from_anndata,
 )
-
 
 __all__ = [
     "CytoNorm",
@@ -35,7 +34,6 @@ __all__ = [
     "HyperLogTransformer",
     "LogTransformer",
     "LogicleTransformer",
-    "Plotter",
     "FCSFile",
     "read_model",
     "mad_from_fcs",
@@ -46,6 +44,7 @@ __all__ = [
     "emd_comparison_from_fcs",
     "emd_from_anndata",
     "emd_comparison_from_anndata",
+    "pl",
 ]
 
 __version__ = "0.0.3"

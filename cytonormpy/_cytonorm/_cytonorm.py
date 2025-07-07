@@ -271,9 +271,9 @@ class CytoNorm:
         """
         self._clustering: Optional[ClusterBase] = clusterer
 
-    def _prepare_training_data_for_clustering(self,
-                                              n_cells: Optional[int] = None,
-                                              markers: Optional[list[str]] = None) -> tuple[pd.DataFrame, np.ndarray]:
+    def _prepare_training_data_for_clustering(
+        self, n_cells: Optional[int] = None, markers: Optional[list[str]] = None
+    ) -> tuple[pd.DataFrame, np.ndarray]:
         if n_cells is not None:
             train_data_df = self._datahandler.get_ref_data_df_subsampled(markers=markers, n=n_cells)
         else:
@@ -354,11 +354,12 @@ class CytoNorm:
                 msg += "may not be appropriate. "
                 warnings.warn(msg, ClusterCVWarning)
 
-    def calculate_cluster_cvs(self,
-                              n_metaclusters: list[int],
-                              n_cells: Optional[int] = None,
-                              markers: Optional[list[str]] = None,
-                              ):
+    def calculate_cluster_cvs(
+        self,
+        n_metaclusters: list[int],
+        n_cells: Optional[int] = None,
+        markers: Optional[list[str]] = None,
+    ):
         """
         Compute per-cluster coefficient of variation (CV) across samples for multiple meta-cluster counts.
 
@@ -394,18 +395,18 @@ class CytoNorm:
         """
 
         train_data_df, X = self._prepare_training_data_for_clustering(n_cells, markers)
-        
+
         assert self._clustering is not None
         mc_array = self._clustering.calculate_clusters_multiple(X, n_metaclusters)
-        mc_df = pd.DataFrame(columns = n_metaclusters, data = mc_array, index = train_data_df.index)
+        mc_df = pd.DataFrame(columns=n_metaclusters, data=mc_array, index=train_data_df.index)
         mc_df = mc_df.reset_index()
-        
+
         cluster_key = "cluster"
         sample_key = self._datahandler.metadata.sample_identifier_column
         cvs_by_k = {}
         for k in n_metaclusters:
             tmp = cast(pd.DataFrame, mc_df[[sample_key, k]])
-            tmp = tmp.rename(columns = {k: cluster_key})
+            tmp = tmp.rename(columns={k: cluster_key})
             cvs_by_k[k] = _calculate_cluster_cv(tmp, cluster_key, sample_key)
 
         self.cvs_by_k = cvs_by_k
