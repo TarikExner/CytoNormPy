@@ -55,7 +55,7 @@ __all__ = [
     "mad",
     "cv_heatmap",
     "splineplot",
-    "Plotter"
+    "Plotter",
 ]
 
 __version__ = "1.0.2"

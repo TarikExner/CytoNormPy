@@ -9,7 +9,7 @@ from typing import Optional, Literal, Union, cast
 
 from .._cytonorm import CytoNorm
 
-from ._utils import set_scatter_defaults, modify_axes, modify_legend, save_or_show
+from ._utils import set_scatter_defaults, modify_axes, modify_legend, save_or_show, apply_vary_textures
 
 
 def scatter(
@@ -25,6 +25,7 @@ def scatter(
     subsample: Optional[int] = None,
     linthresh: float = 500,
     display_reference: bool = True,
+    vary_textures: bool = False, 
     figsize: tuple[float, float] = (2, 2),
     ax: Optional[Axes] = None,
     return_fig: bool = False,
@@ -67,6 +68,9 @@ def scatter(
     display_reference
         Whether to display the reference data from
         that batch as well. Defaults to True.
+    vary_textures
+        If True, use different marker shapes for each 'origin' category
+        by passing `style="origin"` and a `markers` mapping to seaborn.
     ax
         A Matplotlib Axes to plot into.
     return_fig
@@ -102,7 +106,27 @@ def scatter(
                        s = 10,
                        linewidth = 0.4,
                        edgecolor = "black")
+    .. note::
+        If you want additional separation of the individual point classes,
+        you can pass 'vary_textures=True'.
 
+    .. plot::
+        :context: close-figs
+
+        import cytonormpy as cnp
+
+        cn = cnp.example_cytonorm()
+        cnp.pl.scatter(cn,
+                       cn._datahandler.metadata.validation_file_names[0],
+                       x_channel = "Ho165Di",
+                       y_channel = "Yb172Di",
+                       x_scale = "linear",
+                       y_scale = "linear",
+                       vary_textures = True,
+                       figsize = (4,4),
+                       s = 10,
+                       linewidth = 0.4,
+                       edgecolor = "black")
 
     """
 
@@ -125,6 +149,9 @@ def scatter(
         "ax": ax,
     }
 
+    if vary_textures:
+        apply_vary_textures(plot_kwargs, data.reset_index(), "origin")
+
     kwargs = set_scatter_defaults(kwargs)
 
     sns.scatterplot(**plot_kwargs, **kwargs)
@@ -134,7 +161,6 @@ def scatter(
     modify_legend(ax=ax, legend_labels=legend_labels)
 
     return save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
-
 
 def _prepare_data(
     cnp: CytoNorm,

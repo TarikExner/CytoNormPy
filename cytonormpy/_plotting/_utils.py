@@ -1,7 +1,27 @@
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from typing import Optional, Union
+
+DEFAULT_MARKERS = ["o", "^", "s", "P", "D", "X", "v", "<", ">", "*"]
+DASH_STYLES = ["solid", "dashed", "dashdot", "dotted"]
+
+
+def apply_vary_textures(plot_kwargs: dict, df: pd.DataFrame, hue: Optional[str]) -> None:
+    """
+    Mutates plot_kwargs in-place to add seaborn-style marker variation
+    based on the categories in df[hue].
+    """
+    if not hue:
+        return
+    levels = list(df[hue].unique())
+    plot_kwargs["style"] = hue
+    plot_kwargs["style_order"] = levels
+    plot_kwargs["markers"] = {
+        lvl: DEFAULT_MARKERS[i % len(DEFAULT_MARKERS)]
+        for i, lvl in enumerate(levels)
+    }
 
 
 def set_scatter_defaults(kwargs: dict) -> dict:

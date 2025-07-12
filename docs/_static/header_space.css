@@ -1,0 +1,9 @@
+/* bump the top‐margin on all level-1 headings */
+h1 {
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+ul.toctree > li > p.caption + ul.toctree {
+  margin-top: 1.5em;
+}

@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from typing import Optional, Union, TypeAlias, Sequence
 from .._cytonorm._cytonorm import CytoNorm
 
-from ._utils import set_scatter_defaults, save_or_show
+from ._utils import set_scatter_defaults, save_or_show, apply_vary_textures
 
 NDArrayOfAxes: TypeAlias = "np.ndarray[Sequence[Sequence[Axes]], np.dtype[np.object_]]"
 
@@ -24,6 +24,7 @@ def emd(
     figsize: Optional[tuple[float, float]] = None,
     grid: Optional[str] = None,
     grid_n_cols: Optional[int] = None,
+    vary_textures: bool = False,
     ax: Optional[Union[Axes, NDArrayOfAxes]] = None,
     return_fig: bool = False,
     show: bool = True,
@@ -55,6 +56,8 @@ def emd(
         plot. Can be the same inputs as `colorby`.
     grid_n_cols
         The number of columns in the grid.
+    vary_textures:
+        If True, will plot different markers for the 'hue' variable.
     ax
         A Matplotlib Axes to plot into.
     return_fig
@@ -110,6 +113,7 @@ def emd(
             grid_by=grid,
             grid_n_cols=grid_n_cols,
             figsize=figsize,
+            vary_textures=vary_textures,
             **kwargs,
         )
         ax_shape = ax.shape
@@ -134,6 +138,8 @@ def emd(
         assert ax is not None
 
         plot_kwargs = {"data": df, "x": "normalized", "y": "original", "hue": colorby, "ax": ax}
+        if vary_textures:
+            apply_vary_textures(plot_kwargs, df, colorby)
         assert isinstance(ax, Axes)
         sns.scatterplot(**plot_kwargs, **kwargs)
         _draw_comp_line(ax)
@@ -154,6 +160,7 @@ def mad(
     mad_cutoff: float = 0.25,
     grid: Optional[str] = None,
     grid_n_cols: Optional[int] = None,
+    vary_textures: bool = False,
     figsize: Optional[tuple[float, float]] = None,
     ax: Optional[Union[Axes, NDArrayOfAxes]] = None,
     return_fig: bool = False,
@@ -190,6 +197,8 @@ def mad(
         plot. Can be the same inputs as `colorby`.
     grid_n_cols
         The number of columns in the grid.
+    vary_textures:
+        If True, will plot different markers for the 'hue' variable.
     ax
         A Matplotlib Axes to plot into.
     return_fig
@@ -247,6 +256,7 @@ def mad(
             grid_by=grid,
             grid_n_cols=grid_n_cols,
             figsize=figsize,
+            vary_textures=vary_textures,
             **kwargs,
         )
         ax_shape = ax.shape
@@ -271,6 +281,8 @@ def mad(
         assert ax is not None
 
         plot_kwargs = {"data": df, "x": "normalized", "y": "original", "hue": colorby, "ax": ax}
+        if vary_textures:
+            apply_vary_textures(plot_kwargs, df, colorby)
         assert isinstance(ax, Axes)
         sns.scatterplot(**plot_kwargs, **kwargs)
         _draw_cutoff_line(ax, cutoff=mad_cutoff)
@@ -360,6 +372,7 @@ def _generate_scatter_grid(
     grid_n_cols: Optional[int],
     figsize: tuple[float, float],
     colorby: Optional[str],
+    vary_textures: bool,
     **scatter_kwargs: Optional[dict],
 ) -> tuple[Figure, NDArrayOfAxes]:
     n_cols, n_rows, figsize = _get_grid_sizes(
@@ -371,6 +384,9 @@ def _generate_scatter_grid(
 
     hue = None if colorby == grid_by else colorby
     plot_params = {"x": "normalized", "y": "original", "hue": hue}
+
+    if vary_textures:
+        apply_vary_textures(plot_params, df, colorby)
 
     fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=figsize, sharex=True, sharey=True)
     ax = ax.flatten()
