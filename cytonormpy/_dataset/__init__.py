@@ -13,5 +13,5 @@ __all__ = [
     "InfRemovalWarning",
     "NaNRemovalWarning",
     "TruncationWarning",
-    "Metadata"
+    "Metadata",
 ]

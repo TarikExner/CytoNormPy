@@ -114,6 +114,4 @@ def cv_heatmap(
 
     fig.colorbar(im, ax=ax, label="CV")
 
-    fig.tight_layout()
-
     return save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)

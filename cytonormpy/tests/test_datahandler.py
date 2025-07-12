@@ -337,6 +337,7 @@ def test_marker_selection_subsampled_filters_and_counts(
     df = dh.get_ref_data_df_subsampled(markers=detector_subset, n=10)
     assert df.shape == (10, len(detector_subset))
 
+
 def test_no_reference_files_all_artificial_fcs(metadata: pd.DataFrame, INPUT_DIR: Path):
     # Relabel every sample as non‐reference
     md = metadata.copy()
