@@ -58,4 +58,4 @@ __all__ = [
     "Plotter"
 ]
 
-__version__ = "0.0.4"
+__version__ = "1.0.2"
