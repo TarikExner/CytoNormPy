@@ -21,7 +21,7 @@ from ._evaluation import (
     emd_comparison_from_anndata,
 )
 from . import _plotting as pl
-from ._plotting import scatter, histogram, emd, mad, cv_heatmap, splineplot
+from ._plotting import scatter, histogram, emd, mad, cv_heatmap, splineplot, Plotter
 
 sys.modules.update({f"{__name__}.{m}": globals()[m] for m in ["pl"]})
 
@@ -55,6 +55,7 @@ __all__ = [
     "mad",
     "cv_heatmap",
     "splineplot",
+    "Plotter"
 ]
 
 __version__ = "0.0.4"
