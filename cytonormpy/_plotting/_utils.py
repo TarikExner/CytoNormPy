@@ -19,8 +19,7 @@ def apply_vary_textures(plot_kwargs: dict, df: pd.DataFrame, hue: Optional[str])
     plot_kwargs["style"] = hue
     plot_kwargs["style_order"] = levels
     plot_kwargs["markers"] = {
-        lvl: DEFAULT_MARKERS[i % len(DEFAULT_MARKERS)]
-        for i, lvl in enumerate(levels)
+        lvl: DEFAULT_MARKERS[i % len(DEFAULT_MARKERS)] for i, lvl in enumerate(levels)
     }
 
 

@@ -9,7 +9,13 @@ from typing import Optional, Literal, Union, cast
 
 from .._cytonorm import CytoNorm
 
-from ._utils import set_scatter_defaults, modify_axes, modify_legend, save_or_show, apply_vary_textures
+from ._utils import (
+    set_scatter_defaults,
+    modify_axes,
+    modify_legend,
+    save_or_show,
+    apply_vary_textures,
+)
 
 
 def scatter(
@@ -25,7 +31,7 @@ def scatter(
     subsample: Optional[int] = None,
     linthresh: float = 500,
     display_reference: bool = True,
-    vary_textures: bool = False, 
+    vary_textures: bool = False,
     figsize: tuple[float, float] = (2, 2),
     ax: Optional[Axes] = None,
     return_fig: bool = False,
@@ -161,6 +167,7 @@ def scatter(
     modify_legend(ax=ax, legend_labels=legend_labels)
 
     return save_or_show(ax=ax, fig=fig, save=save, show=show, return_fig=return_fig)
+
 
 def _prepare_data(
     cnp: CytoNorm,

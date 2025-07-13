@@ -139,12 +139,9 @@ def histogram(
     data = _prepare_data(cnp, file_name, display_reference, channels, subsample=subsample)
 
     hues = data.index.get_level_values("origin").unique().sort_values()
-   
+
     dash_styles = DASH_STYLES
-    style_map = {
-        origin: dash_styles[i % len(dash_styles)]
-        for i, origin in enumerate(hues)
-    }
+    style_map = {origin: dash_styles[i % len(dash_styles)] for i, origin in enumerate(hues)}
 
     kde_kwargs = {}
 
@@ -249,9 +246,8 @@ def _get_grid_sizes_channels(
 
     return n_cols, n_rows, figsize
 
-def _apply_textures_and_legend(ax: Axes,
-                               hues: list[str],
-                               style_map: dict[str, str]) -> None:
+
+def _apply_textures_and_legend(ax: Axes, hues: list[str], style_map: dict[str, str]) -> None:
     """
     1) Apply the linestyle from style_map to each line in ax.lines,
        assuming they come out in the same order as hues.
@@ -263,20 +259,10 @@ def _apply_textures_and_legend(ax: Axes,
 
     colors = [line.get_color() for line in ax.lines[: len(hues)]]
     handles = [
-        Line2D(
-            [], [], 
-            color=colors[i], 
-            linestyle=style_map[origin], 
-            label=origin
-        )
+        Line2D([], [], color=colors[i], linestyle=style_map[origin], label=origin)
         for i, origin in enumerate(hues)
     ]
 
     if ax.legend_:
         ax.legend_.remove()
-    ax.legend(
-        handles=handles,
-        bbox_to_anchor=(1.01, 0.5),
-        loc="center left",
-        title="origin"
-    )
+    ax.legend(handles=handles, bbox_to_anchor=(1.01, 0.5), loc="center left", title="origin")
