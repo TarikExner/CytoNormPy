@@ -1,12 +1,9 @@
 import numpy as np
 from numba import njit, float64, float32
 
+
 @njit(
-    [
-        float32[:, :](float32[:, :], float32[:]),
-        float64[:, :](float64[:, :], float64[:])
-    ],
-    cache=True
+    [float32[:, :](float32[:, :], float32[:]), float64[:, :](float64[:, :], float64[:])], cache=True
 )
 def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     """
@@ -32,7 +29,7 @@ def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
 
     n_quantiles = len(q)
     n_columns = a.shape[1]
-    quantiles = np.empty((n_quantiles, n_columns), dtype=np.float64)
+    quantiles = np.empty((n_quantiles, n_columns), dtype=a.dtype)
 
     for col in range(n_columns):
         sorted_col = np.sort(a[:, col])
@@ -54,13 +51,7 @@ def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     return quantiles
 
 
-@njit(
-    [
-        float32[:, :](float32[:, :], float32[:]),
-        float64[:, :](float64[:, :], float64[:])
-    ],
-    cache=True
-)
+@njit([float32[:](float32[:], float32[:]), float64[:](float64[:], float64[:])], cache=True)
 def numba_quantiles_1d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     """\
     Compute quantiles for a 1D numpy array.

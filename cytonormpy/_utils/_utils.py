@@ -4,7 +4,7 @@ import pandas as pd
 
 from typing import Optional, Callable, Union
 
-from numba import njit, float64, int32, int64
+from numba import njit, float64, int32, int64, intp
 from numba.types import Tuple
 
 
@@ -53,7 +53,7 @@ def _select_interpolants_numba(x: np.ndarray, y: np.ndarray):
 
 
 @njit(float64(float64[:]))
-def _numba_mean(arr) -> np.ndarray:
+def _numba_mean(arr: np.ndarray) -> np.ndarray:
     """
     Calculate the mean of a float64 array.
     """
@@ -61,7 +61,7 @@ def _numba_mean(arr) -> np.ndarray:
 
 
 @njit(float64(float64[:]))
-def _numba_median(arr):
+def _numba_median(arr: np.ndarray) -> float:
     """
     Calculate the median of a float64 array.
     """
@@ -77,7 +77,7 @@ def _numba_median(arr):
 
 
 @njit(int32[:](float64[:], float64[:], int32, int64[:]))
-def numba_searchsorted(arr, values, side, sorter):
+def numba_searchsorted(arr: np.ndarray, values: np.ndarray, side: int, sorter: np.ndarray):
     """
     Numba-compatible searchsorted function for single and multiple values with 'left' and 'right' modes.
 
@@ -116,8 +116,8 @@ def numba_searchsorted(arr, values, side, sorter):
     return indices
 
 
-@njit((float64[:],))
-def numba_unique_indices(arr):
+@njit(Tuple((float64[:], intp[:]))(float64[:]))
+def numba_unique_indices(arr: np.ndarray):
     """
     Numba-compatible function to find unique elements and their original indices.
 
@@ -176,7 +176,7 @@ def _insert_to_array(y, b, e, ties):
     return y
 
 
-@njit((float64[:], float64[:], int32, int32))
+@njit(Tuple((float64[:], float64[:]))(float64[:], float64[:], int32, int32))
 def _regularize(x: np.ndarray, y: np.ndarray, ties: int, nx: int):
     o = np.argsort(x)
     x = x[o]
