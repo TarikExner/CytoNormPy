@@ -1,11 +1,13 @@
 import numpy as np
 from numba import njit, float64, float32
 
-njit(
-    [float32[:, :](float32[:, :], float32[:]), float64[:, :](float64[:, :], float64[:])], cache=True
+@njit(
+    [
+        float32[:, :](float32[:, :], float32[:]),
+        float64[:, :](float64[:, :], float64[:])
+    ],
+    cache=True
 )
-
-
 def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     """
     Compute quantiles for a 2D numpy array along axis 0.
@@ -52,9 +54,13 @@ def numba_quantiles_2d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     return quantiles
 
 
-njit([float32[:](float32[:], float32[:]), float64[:](float64[:], float64[:])], cache=True)
-
-
+@njit(
+    [
+        float32[:, :](float32[:, :], float32[:]),
+        float64[:, :](float64[:, :], float64[:])
+    ],
+    cache=True
+)
 def numba_quantiles_1d(a: np.ndarray, q: np.ndarray) -> np.ndarray:
     """\
     Compute quantiles for a 1D numpy array.
