@@ -21,14 +21,14 @@ classifiers = [
 dependencies = [
     "pytometry",
     "pandas>=2.0.0",
-    "anndata<=0.10",
-    "scipy==1.13.0",
-    "pandas>=2.0.0,<2.2",
-    "flowio<=1.3.0",
-    "flowutils<=1.1.0",
-    "numba<=0.59.0",
-    "numpy<2.0.0",
-    "flowsom@git+https://github.com/saeyslab/FlowSOM_Python@b7ae45a9b7b9654614b10b119accef2974a7be96"
+    "anndata",
+    # "scipy==1.13.0",
+    # "pandas>=2.0.0,<2.2",
+    "flowio<=1.3.0", # strict version needed due to code, fix later
+    "flowutils",
+    # "numba<=0.59.0", # re-add when openBLAS issue
+    # "numpy<2.0.0", # re-add when openBLAS issue
+    "flowsom"
 ]
 
 [project.optional-dependencies]
