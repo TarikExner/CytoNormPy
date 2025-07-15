@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from abc import abstractmethod
@@ -166,6 +167,21 @@ class DataProvider:
         return data
 
     def annotate_metadata(self, data: pd.DataFrame, file_name: str) -> pd.DataFrame:
+        ref_value = self.metadata.get_ref_value(file_name)
+        batch_value = self.metadata.get_batch(file_name)
+        sample_identifier = file_name
+        
+        data.index = pd.MultiIndex.from_tuples(
+            [(ref_value,batch_value,sample_identifier)] * len(data),
+            names=[
+                self.metadata.reference_column,
+                self.metadata.batch_column,
+                self.metadata.sample_identifier_column
+            ]
+        )
+        return data
+
+    def annotate_metadata_old(self, data: pd.DataFrame, file_name: str) -> pd.DataFrame:
         """\
         Annotates metadata (sample identifier, batch value and
         reference value) to the expression data.
@@ -182,7 +198,6 @@ class DataProvider:
         The annotated expression data.
 
         """
-
         self._annotate_reference_value(data, file_name)
         self._annotate_batch_value(data, file_name)
         self._annotate_sample_identifier(data, file_name)
