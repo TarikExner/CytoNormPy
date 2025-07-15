@@ -7,9 +7,9 @@ from ._fcs_file import FCSFile
 
 
 class DataReader:
-
     def __init__(self):
         pass
+
 
 class DataReaderFCS(DataReader):
     """\
@@ -31,14 +31,12 @@ class DataReaderFCS(DataReader):
     None
 
     """
-    def __init__(self,
-                 input_directory: Union[PathLike, str],
-                 truncate_max_range: bool = True):
+
+    def __init__(self, input_directory: Union[PathLike, str], truncate_max_range: bool = True):
         self._input_dir = input_directory
         self._truncate_max_range = truncate_max_range
-    
-    def parse_fcs_df(self,
-                     file_name: str) -> pd.DataFrame:
+
+    def parse_fcs_df(self, file_name: str) -> pd.DataFrame:
         """\
         Reads an FCS file and creates a dataframe where
         the columns represent the channels and the rows
@@ -54,10 +52,9 @@ class DataReaderFCS(DataReader):
         A :class:`pandas.DataFrame`
         """
 
-        return self.parse_fcs_file(file_name = file_name).to_df()
+        return self.parse_fcs_file(file_name=file_name).to_df()
 
-    def parse_fcs_file(self,
-                       file_name: str) -> FCSFile:
+    def parse_fcs_file(self, file_name: str) -> FCSFile:
         """\
         Reads an FCS File from disk and provides it as an
         FCSFile instance.
@@ -72,12 +69,12 @@ class DataReaderFCS(DataReader):
         A :class:`cytonormpy.FCSFile`
         """
         return FCSFile(
-            input_directory = self._input_dir,
-            file_name = file_name,
-            truncate_max_range = self._truncate_max_range
+            input_directory=self._input_dir,
+            file_name=file_name,
+            truncate_max_range=self._truncate_max_range,
         )
 
-class DataReaderAnnData(DataReader):
 
+class DataReaderAnnData(DataReader):
     def __init__(self):
         pass

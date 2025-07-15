@@ -6,10 +6,10 @@ from itertools import combinations
 
 from typing import Union, Iterable
 
-def _bin_array(values: list[float],
-               hist_min: float,
-               hist_max: float,
-               bin_size: float) -> tuple[Iterable, np.ndarray]:
+
+def _bin_array(
+    values: list[float], hist_min: float, hist_max: float, bin_size: float
+) -> tuple[Iterable, np.ndarray]:
     """
     Bins the input arrays into bins with a size of 0.1.
 
@@ -37,14 +37,13 @@ def _bin_array(values: list[float],
     in the function _calculate_wasserstein_distance.
 
     """
-    bins = np.arange(
-        hist_min,
-        hist_max,
-        bin_size
-    ) + 0.0000001 # n bins, the 0.0000001 is to avoid the left edge being included in the bin
-    counts, _ = np.histogram(values, bins = bins)
-    
-    return range(bins.shape[0] - 1), counts/sum(counts)
+    bins = (
+        np.arange(hist_min, hist_max, bin_size) + 0.0000001
+    )  # n bins, the 0.0000001 is to avoid the left edge being included in the bin
+    counts, _ = np.histogram(values, bins=bins)
+
+    return range(bins.shape[0] - 1), counts / sum(counts)
+
 
 def _calculate_wasserstein_distance(group_pair: tuple[list[float], ...]) -> float:
     """
@@ -90,15 +89,12 @@ def _calculate_wasserstein_distance(group_pair: tuple[list[float], ...]) -> floa
 
     u_values, u_weights = _bin_array(
         group_pair[0],
-        hist_min = global_min - 1, # we extend slightly to cover all bins
-        hist_max = global_max + 1, # we extend slightly to cover all bins
-        bin_size = bin_size
+        hist_min=global_min - 1,  # we extend slightly to cover all bins
+        hist_max=global_max + 1,  # we extend slightly to cover all bins
+        bin_size=bin_size,
     )
     v_values, v_weights = _bin_array(
-        group_pair[1],
-        hist_min = global_min - 1,
-        hist_max = global_max + 1,
-        bin_size = bin_size
+        group_pair[1], hist_min=global_min - 1, hist_max=global_max + 1, bin_size=bin_size
     )
 
     emd = wasserstein_distance(u_values, v_values, u_weights, v_weights)
@@ -108,8 +104,8 @@ def _calculate_wasserstein_distance(group_pair: tuple[list[float], ...]) -> floa
 
     return emd
 
-def _calculate_bin_size(global_min: float,
-                        global_max: float) -> float:
+
+def _calculate_bin_size(global_min: float, global_max: float) -> float:
     """
     Calculates the necessary bin size. If the data range is large,
     choosing the default value of bin_size = 0.1 might lead to
@@ -132,7 +128,7 @@ def _calculate_bin_size(global_min: float,
     """
     diff = global_max - global_min
     adj_factor = np.ceil(np.log10(diff))
-    return max(0.1, 0.0001 * 10 ** adj_factor)
+    return max(0.1, 0.0001 * 10**adj_factor)
 
 
 def _calculate_wasserstein_distances(grouped_data: pd.DataFrame) -> Union[pd.Series, pd.DataFrame]:
@@ -156,6 +152,7 @@ def _calculate_wasserstein_distances(grouped_data: pd.DataFrame) -> Union[pd.Ser
     wasserstein_dists = pd.Series(group_pairs).apply(_calculate_wasserstein_distance)
     return wasserstein_dists
 
+
 def _wasserstein_per_label(label_group, channels) -> pd.Series:
     """
     Wrapper function in order to coordinate the EMD calculations.
@@ -170,9 +167,10 @@ def _wasserstein_per_label(label_group, channels) -> pd.Series:
         max_dists[channel] = dists.max() if not dists.empty else float("nan")
     return pd.Series(max_dists)
 
-def _calculate_emd_per_frame(df: pd.DataFrame,
-                             channels: Union[list[str], pd.Index]) -> pd.DataFrame:
 
+def _calculate_emd_per_frame(
+    df: pd.DataFrame, channels: Union[list[str], pd.Index]
+) -> pd.DataFrame:
     assert all(level in df.index.names for level in ["file_name", "label"])
     n_labels = df.index.get_level_values("label").nunique()
 
@@ -180,13 +178,13 @@ def _calculate_emd_per_frame(df: pd.DataFrame,
         lambda label_group: _wasserstein_per_label(label_group, channels)
     )
     if n_labels > 1:
-        df = df.reset_index(level = "label")
+        df = df.reset_index(level="label")
         df["label"] = "all_cells"
-        df = df.set_index("label", append = True, drop = True)
+        df = df.set_index("label", append=True, drop=True)
         all_cells = df.groupby("label").apply(
             lambda label_group: _wasserstein_per_label(label_group, channels)
         )
 
-        res = pd.concat([all_cells, res], axis = 0)
+        res = pd.concat([all_cells, res], axis=0)
 
     return res

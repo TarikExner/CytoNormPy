@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cytonormpy"
-version = "0.0.4"
+version = "1.0.2"
 authors = [
   { name="Tarik Exner", email="Tarik.Exner@med.uni-heidelberg.de" },
 ]
@@ -25,9 +25,10 @@ dependencies = [
     "numpy",
     "scipy",
     "pandas",
-    "flowio",
+    "flowio<=1.3.0",
     "flowutils",
-    "flowsom@git+https://github.com/saeyslab/FlowSOM_Python"
+    "flowsom"
+    # "flowsom@git+https://github.com/saeyslab/FlowSOM_Python"
 ]
 
 [project.optional-dependencies]
@@ -50,6 +51,11 @@ test = [
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+fix = true
 
 [project.urls]
 "Homepage" = "http://github.com/TarikExner/CytoNormPy/"

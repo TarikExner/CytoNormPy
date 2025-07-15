@@ -1,12 +1,11 @@
-import pytest
 import os
 from os import PathLike
 
 import cytonormpy as cnp
 from cytonormpy import AsinhTransformer, read_model
 
-def test_save_and_read_model(tmpdir: PathLike):
 
+def test_save_and_read_model(tmpdir: PathLike):
     cytonorm = cnp.CytoNorm()
     t = AsinhTransformer
     cytonorm.add_transformer(t)
@@ -19,5 +18,3 @@ def test_save_and_read_model(tmpdir: PathLike):
     assert cy_reread._transformer is not None
 
     assert not hasattr(cy_reread, "_datahandler")
-
-

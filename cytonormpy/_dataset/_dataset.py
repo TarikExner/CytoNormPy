@@ -8,16 +8,13 @@ from anndata import AnnData
 from flowio import FlowData
 from flowio.exceptions import FCSParsingError
 from pandas.io.parsers.readers import TextFileReader
-from pandas.api.types import is_numeric_dtype
 
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, cast
 
-from .._utils._utils import (_all_batches_have_reference,
-                             _conclusive_reference_values)
 
-from ._dataprovider import (DataProviderFCS,
-                            DataProviderAnnData,
-                            DataProvider)
+from ._dataprovider import DataProviderFCS, DataProviderAnnData
+from ._metadata import Metadata
+
 from .._transformation._transformations import Transformer
 
 from abc import abstractmethod
@@ -28,34 +25,27 @@ class DataHandler:
     Base Class for data handling.
     """
 
-    _flow_technicals: list[str] = [
-        "fsc", "ssc", "time"
-    ]
-    _spectral_flow_technicals: list[str] = [
-        "fsc", "ssc", "time", "af"
-    ]
+    _flow_technicals: list[str] = ["fsc", "ssc", "time"]
+    _spectral_flow_technicals: list[str] = ["fsc", "ssc", "time", "af"]
     _cytof_technicals: list[str] = [
-        "event_length", "width", "height", "center",
-        "residual", "offset", "amplitude", "dna1", "dna2"
+        "event_length",
+        "width",
+        "height",
+        "center",
+        "residual",
+        "offset",
+        "amplitude",
+        "dna1",
+        "dna2",
     ]
+    metadata: Metadata
+    n_cells_reference: Optional[int]
 
-
-    def __init__(self,
-                 channels: Union[list[str], str, Literal["all", "markers"]],
-                 provider: DataProvider):
-
-        try:
-            self._validation_value = list(set([
-                val for val in self._metadata[self._reference_column]
-                if val != self._reference_value
-            ]))[0]
-        except IndexError: # means we only have reference values
-            self._validation_value = None
-
-        self.ref_file_names = self._get_reference_file_names()
-        self.validation_file_names = self._get_validation_file_names()
-        self.all_file_names = self.ref_file_names + self.validation_file_names
-
+    def __init__(
+        self,
+        channels: Union[list[str], str, Literal["all", "markers"]],
+        provider: Union[DataProviderAnnData, DataProviderFCS],
+    ):
         self._provider = provider
 
         self.ref_data_df = self._create_ref_data_df()
@@ -66,34 +56,82 @@ class DataHandler:
 
         self._channel_indices = self._find_channel_indices()
 
-    def _validate_metadata(self,
-                           metadata: pd.DataFrame) -> None:
-        self._metadata = metadata
-        self._validate_metadata_table(self._metadata)
-        self._validate_batch_references(self._metadata)
-        self._convert_batch_dtype()
+    def get_ref_data_df(self, markers: Optional[Union[list[str], str]] = None) -> pd.DataFrame:
+        """Returns the reference data frame."""
+        # cytonorm 2.0: select channels you want for clustering
+        if not markers:
+            return self.ref_data_df
 
-    def _convert_batch_dtype(self) -> None:
+        if not isinstance(markers, list):
+            # weird edge case if someone passes only one marker
+            markers = [markers]
+        # safety measure: we use the _select channel function
+        markers = self._select_channels(markers)
+        return cast(pd.DataFrame, self.ref_data_df[markers])
+
+    def get_ref_data_df_subsampled(self, n: int, markers: Optional[Union[list[str], str]] = None):
+        """Returns the reference data frame, subsampled to `n` events."""
+        return self._subsample_df(self.get_ref_data_df(markers), n)
+
+    def get_dataframe(self, file_name: str) -> pd.DataFrame:
+        """Returns a dataframe for the indicated file name."""
+        return self._provider.prep_dataframe(file_name)
+
+    def get_corresponding_ref_dataframe(self, file_name: str) -> pd.DataFrame:
+        """Returns the data of the corresponding reference for the indicated file name."""
+        corresponding_reference_file = self.metadata.get_corresponding_reference_file(file_name)
+        return self.get_dataframe(file_name=corresponding_reference_file)
+
+    def _create_ref_data_df(self) -> pd.DataFrame:
+        """\
+        Creates the reference dataframe by concatenating the reference files
+        and a subsample of files of batch w/o references
         """
-        If the batch is entered as a string, we convert them
-        to integers in order to comply with the numpy sorts
-        later on.
-        """
-        if not is_numeric_dtype(self._metadata[self._batch_column]):
-            try:
-                self._metadata[self._batch_column] = \
-                    self._metadata[self._batch_column].astype(np.int8)
-            except ValueError:
-                self._metadata[f"original_{self._batch_column}"] = \
-                    self._metadata[self._batch_column]
-                mapping = {entry: i for i, entry in enumerate(self._metadata[self._batch_column].unique())}
-                self._metadata[self._batch_column] = \
-                    self._metadata[self._batch_column].map(mapping)
+        if self.metadata.ref_file_names:
+            original_references = pd.concat(
+                [self.get_dataframe(file) for file in self.metadata.ref_file_names], axis=0
+            )
+        else:
+            original_references = pd.DataFrame()
+
+        # cytonorm 2.0: Construct the reference from a subset of all files per batch
+        artificial_reference_dict = self.metadata.reference_assembly_dict
+        artificial_refs = []
+        for batch in artificial_reference_dict:
+            df = pd.concat(
+                [self.get_dataframe(file) for file in artificial_reference_dict[batch]], axis=0
+            )
+            if not self.n_cells_reference:
+                n_cells_reference = int(0.1 * df.shape[0])
+            else:
+                n_cells_reference = self.n_cells_reference
+            df = df.sample(n=n_cells_reference, random_state=187)
+
+            old_idx = df.index
+            names = old_idx.names
+            assert old_idx.names[2] == self.metadata.sample_identifier_column
+            assert old_idx.names[0] == self.metadata.reference_column
+
+            label = f"__B_{batch}_CYTONORM_GENERATED__"
+            ref_label = self.metadata.reference_value
+            n = len(df)
+            new_sample_vals = [label] * n
+            new_ref_labels = [ref_label] * n
+
+            new_idx = pd.MultiIndex.from_arrays(
+                [new_ref_labels, old_idx.get_level_values(1), new_sample_vals],
+                names=names,
+            )
+            df.index = new_idx
+            artificial_refs.append(df)
+
+        return pd.concat([original_references, *artificial_refs], axis=0)
+
+    def _subsample_df(self, df: pd.DataFrame, n: int):
+        return df.sample(n=n, axis=0, random_state=187)
 
     @abstractmethod
-    def write(self,
-              file_name: str,
-              data: pd.DataFrame) -> None:
+    def write(self, file_name: str, data: pd.DataFrame) -> None:
         pass
 
     @property
@@ -101,12 +139,10 @@ class DataHandler:
         return self._flow_technicals
 
     @flow_technicals.setter
-    def flow_technicals(self,
-                        technicals: list[str]):
+    def flow_technicals(self, technicals: list[str]):
         self._flow_technicals = technicals
 
-    def append_flow_technicals(self,
-                               value):
+    def append_flow_technicals(self, value):
         self.flow_technicals.append(value)
 
     @property
@@ -114,12 +150,10 @@ class DataHandler:
         return self._spectral_flow_technicals
 
     @spectral_flow_technicals.setter
-    def spectral_flow_technicals(self,
-                                 technicals: list[str]):
+    def spectral_flow_technicals(self, technicals: list[str]):
         self._spectral_flow_technicals = technicals
 
-    def append_spectral_flow_technicals(self,
-                                        value):
+    def append_spectral_flow_technicals(self, value):
         self.spectral_flow_technicals.append(value)
 
     @property
@@ -127,162 +161,24 @@ class DataHandler:
         return self._cytof_technicals
 
     @cytof_technicals.setter
-    def cytof_technicals(self,
-                         technicals: list[str]):
+    def cytof_technicals(self, technicals: list[str]):
         self._cytof_technicals = technicals
 
-    def append_cytof_technicals(self,
-                                value):
+    def append_cytof_technicals(self, value):
         self.cytof_technicals.append(value)
 
-    def _add_file_to_metadata(self,
-                              file_name,
-                              batch):
-        new_file_df = pd.DataFrame(
-            data = [[file_name, self._validation_value, batch]],
-            columns = [
-                self._sample_identifier_column,
-                self._reference_column,
-                self._batch_column
-            ],
-            index = [-1]
-        )
-        self._metadata = pd.concat([self._metadata, new_file_df], axis = 0).reset_index(drop = True)
-        self._provider._metadata = self._metadata
-
-    def _add_file(self,
-                  file_name,
-                  batch):
-        self._add_file_to_metadata(file_name, batch)
+    def add_file(self, file_name, batch):
+        self.metadata.add_file_to_metadata(file_name, batch)
+        self._provider.metadata = self.metadata
         if isinstance(self, DataHandlerAnnData):
             obs_idxs = self._find_obs_idxs(file_name)
             arr_idxs = self._get_array_indices(obs_idxs)
             self._copy_input_values_to_key_added(arr_idxs)
 
-    def _init_metadata_columns(self,
-                               reference_column: str,
-                               reference_value: str,
-                               batch_column: str,
-                               sample_identifier_column) -> None:
-        self._reference_column = reference_column
-        self._reference_value = reference_value
-        self._batch_column = batch_column
-        self._sample_identifier_column = sample_identifier_column
-
-        return
-
-    def get_batch(self,
-                  file_name: str) -> str:
-        """\
-        Returns the corresponding batch of a file.
-
-        Parameters
-        ----------
-        file_name
-            The sample identifier.
-
-        Returns
-        -------
-        The batch of the file specified in file_name.
-        """
-
-        return self._metadata.loc[
-            self._metadata[self._sample_identifier_column] == file_name,
-            self._batch_column
-        ].iloc[0]
-
-    def _find_corresponding_reference_file(self,
-                                           file_name):
-        batch = self.get_batch(file_name)
-        return self._metadata.loc[
-            (self._metadata[self._batch_column] == batch) &
-            (self._metadata[self._reference_column] == self._reference_value),
-            self._sample_identifier_column
-        ].iloc[0]
-
-    def get_dataframe(self,
-                      file_name: str) -> pd.DataFrame:
-        """
-        Returns a dataframe for the indicated file name.
-
-        Parameters
-        ----------
-        file_name
-            The file_name of the file being read.
-
-        Returns
-        -------
-        A :class:`pandas.DataFrame` containing the expression data.
-        """
-
-        return self._provider.prep_dataframe(file_name)
-
-    def get_corresponding_ref_dataframe(self,
-                                        file_name: str) -> pd.DataFrame:
-        """
-        Returns the data of the corresponding reference
-        for the indicated file name.
-
-        Parameters
-        ----------
-        file_name
-            The file_name of the file being read.
-
-        Returns
-        -------
-        A :class:`pandas.DataFrame` containing the expression data.
-        """
-        corresponding_reference_file = \
-            self._find_corresponding_reference_file(file_name)
-        return self.get_dataframe(file_name = corresponding_reference_file)
-
-
-    def _create_ref_data_df(self) -> pd.DataFrame:
-        return pd.concat(
-            [
-                self._provider.prep_dataframe(file)
-                for file in self.ref_file_names
-            ],
-            axis = 0
-        )
-
-    def get_ref_data_df_subsampled(self,
-                                   n: int):
-        """
-        Returns the reference data frame, subsampled to
-        `n` events.
-
-        Parameters
-        ----------
-        n
-            The number of events to be subsampled.
-
-        Returns
-        -------
-        A :class:`pandas.DataFrame` containing the expression data.
-        """
-        assert isinstance(self.ref_data_df, pd.DataFrame)
-        return self._subsample_df(self.ref_data_df, n)
-
-    def _subsample_df(self,
-                      df: pd.DataFrame,
-                      n: int):
-        return df.sample(n = n, axis = 0, random_state = 187)
-
-    def get_ref_data_df(self) -> pd.DataFrame:
-        """
-        Returns the reference data frame.
-
-        Returns
-        -------
-        A :class:`pandas.DataFrame` containing the expression data.
-        """
-        assert isinstance(self.ref_data_df, pd.DataFrame)
-        return self.ref_data_df
-
-    def _select_channels(self,
-                         user_input: Union[list[str], str, Literal["all", "markers"]]  # noqa
-                         ) -> list[str]:
+    def _select_channels(
+        self,
+        user_input: Union[list[str], str, Literal["all", "markers"]],  # noqa
+    ) -> list[str]:
         """\
         function looks through the channels and decides which channels to keep
         based on the user input.
@@ -295,75 +191,16 @@ class DataHandler:
             assert isinstance(user_input, list), type(user_input)
             return [ch for ch in user_input if ch in self._all_detectors]
 
-    def _find_marker_channels(self,
-                              detectors: list[str]) -> list[str]:
-        exclude = \
-            self._flow_technicals + \
-            self._cytof_technicals + \
-            self._spectral_flow_technicals
+    def _find_marker_channels(self, detectors: list[str]) -> list[str]:
+        exclude = self._flow_technicals + self._cytof_technicals + self._spectral_flow_technicals
         return [ch for ch in detectors if ch.lower() not in exclude]
 
     def _find_channel_indices(self) -> np.ndarray:
         detectors = self._all_detectors
-        return np.array(
-            [
-                detectors.index(ch) for ch in detectors
-                if ch in self.channels
-            ]
-        )
+        return np.array([detectors.index(ch) for ch in detectors if ch in self.channels])
 
-    def _find_channel_indices_in_fcs(self,
-                                     pnn_labels: dict[str, int],
-                                     cytonorm_channels: pd.Index):
-        return [
-            pnn_labels[channel] - 1
-            for channel in cytonorm_channels
-        ]
-
-    def _get_reference_file_names(self) -> list[str]:
-        return self._metadata.loc[
-            self._metadata[self._reference_column] == self._reference_value,
-            self._sample_identifier_column
-        ].unique().tolist()
-
-    def _get_validation_file_names(self) -> list[str]:
-        return self._metadata.loc[
-            self._metadata[self._reference_column] != self._reference_value,
-            self._sample_identifier_column
-        ].unique().tolist()
-
-    def _validate_metadata_table(self,
-                                 metadata: pd.DataFrame):
-        if not all(k in metadata.columns
-                   for k in [self._sample_identifier_column,
-                             self._reference_column,
-                             self._batch_column]):
-            raise ValueError(
-                "Metadata must contain the columns "
-                f"[{self._sample_identifier_column}, "
-                f"{self._reference_column}, "
-                f"{self._batch_column}]. "
-                f"Found {metadata.columns}"
-            )
-        if not _conclusive_reference_values(metadata,
-                                            self._reference_column):
-            raise ValueError(
-                f"The column {self._reference_column} must only contain "
-                "descriptive values for references and other values" 
-            )
-
-    def _validate_batch_references(self,
-                                   metadata: pd.DataFrame):
-        if not _all_batches_have_reference(
-                metadata,
-                reference = self._reference_column,
-                batch = self._batch_column,
-                ref_control_value = self._reference_value
-        ):
-            raise ValueError(
-                "All batches must have reference samples."
-            )
-
+    def _find_channel_indices_in_fcs(self, pnn_labels: dict[str, int], cytonorm_channels: pd.Index):
+        return [pnn_labels[channel] - 1 for channel in cytonorm_channels]
 
 
 class DataHandlerFCS(DataHandler):
@@ -416,96 +253,82 @@ class DataHandlerFCS(DataHandler):
 
     """
 
-    def __init__(self,
-                 metadata: Union[pd.DataFrame, PathLike],
-                 input_directory: Optional[PathLike] = None,
-                 channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
-                 reference_column: str = "reference",
-                 reference_value: str = "ref",
-                 batch_column: str = "batch",
-                 sample_identifier_column: str = "file_name",
-                 transformer: Optional[Transformer] = None,
-                 truncate_max_range: bool = True,
-                 output_directory: Optional[PathLike] = None,
-                 prefix: str = "Norm"
-                 ) -> None:
-
+    def __init__(
+        self,
+        metadata: Union[pd.DataFrame, PathLike],
+        input_directory: Optional[PathLike] = None,
+        channels: Union[list[str], str, Literal["all", "markers"]] = "markers",  # noqa
+        reference_column: str = "reference",
+        reference_value: str = "ref",
+        batch_column: str = "batch",
+        sample_identifier_column: str = "file_name",
+        n_cells_reference: Optional[int] = None,
+        transformer: Optional[Transformer] = None,
+        truncate_max_range: bool = True,
+        output_directory: Optional[PathLike] = None,
+        prefix: str = "Norm",
+    ) -> None:
         self._input_dir = input_directory or os.getcwd()
         self._output_dir = output_directory or input_directory
         self._prefix = prefix
-
-        self._init_metadata_columns(
-            reference_column = reference_column,
-            reference_value = reference_value,
-            batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column
-        )
+        self.n_cells_reference = n_cells_reference
 
         if isinstance(metadata, pd.DataFrame):
             _metadata = metadata
         else:
             _metadata = self._read_metadata(metadata)
 
-        self._validate_metadata(_metadata)
-
-
-        _provider = self._create_data_provider(
-            input_directory = self._input_dir,
-            truncate_max_range = truncate_max_range,
-            sample_identifier_column = sample_identifier_column,
-            reference_column = reference_column,
-            batch_column = batch_column,
-            metadata = _metadata,
-            channels = None, # instantiate with None as we dont know the channels yet
-            transformer = transformer
+        self.metadata = Metadata(
+            metadata=_metadata,
+            reference_column=reference_column,
+            reference_value=reference_value,
+            batch_column=batch_column,
+            sample_identifier_column=sample_identifier_column,
         )
 
+        _provider = self._create_data_provider(
+            input_directory=self._input_dir,
+            truncate_max_range=truncate_max_range,
+            metadata=self.metadata,
+            channels=None,  # instantiate with None as we dont know the channels yet
+            transformer=transformer,
+        )
 
         super().__init__(
-            channels = channels,
-            provider = _provider,
+            channels=channels,
+            provider=_provider,
         )
 
         self._provider.channels = self.channels
         self.ref_data_df = self._provider.select_channels(self.ref_data_df)
 
-    def _create_data_provider(self,
-                              input_directory,
-                              metadata: pd.DataFrame,
-                              channels: Optional[list[str]],
-                              reference_column: str = "reference",
-                              batch_column: str = "batch",
-                              sample_identifier_column: str = "file_name",
-                              truncate_max_range: bool = True,
-                              transformer: Optional[Transformer] = None) -> DataProviderFCS:
+    def _create_data_provider(
+        self,
+        input_directory,
+        metadata: Metadata,
+        channels: Optional[list[str]],
+        truncate_max_range: bool = True,
+        transformer: Optional[Transformer] = None,
+    ) -> DataProviderFCS:
         return DataProviderFCS(
-            input_directory = input_directory,
-            truncate_max_range = truncate_max_range,
-            sample_identifier_column = sample_identifier_column,
-            reference_column = reference_column,
-            batch_column = batch_column,
-            metadata = metadata,
-            channels = channels,
-            transformer = transformer
+            input_directory=input_directory,
+            truncate_max_range=truncate_max_range,
+            metadata=metadata,
+            channels=channels,
+            transformer=transformer,
         )
 
-    def _read_metadata(self,
-                       path: PathLike) -> pd.DataFrame:
+    def _read_metadata(self, path: PathLike) -> pd.DataFrame:
         delimiter = self._fetch_delimiter(path)
-        return pd.read_csv(path, sep = delimiter, index_col = False)
+        return pd.read_csv(path, sep=delimiter, index_col=False)
 
-    def _fetch_delimiter(self,
-                         path: PathLike) -> str:
-        reader: TextFileReader = pd.read_csv(path,
-                                             sep = None,
-                                             iterator = True,
-                                             engine = "python")
+    def _fetch_delimiter(self, path: PathLike) -> str:
+        reader: TextFileReader = pd.read_csv(path, sep=None, iterator=True, engine="python")
         return reader._engine.data.dialect.delimiter
 
-    def write(self,
-              file_name: str,
-              data: pd.DataFrame,
-              output_dir: Optional[PathLike] = None) -> None:
+    def write(
+        self, file_name: str, data: pd.DataFrame, output_dir: Optional[PathLike] = None
+    ) -> None:
         """\
         Writes the data to the hard drive as an .fcs file.
 
@@ -523,22 +346,15 @@ class DataHandlerFCS(DataHandler):
         """
         file_path = os.path.join(self._input_dir, file_name)
         if output_dir is not None:
-            new_file_path = os.path.join(
-                output_dir, f"{self._prefix}_{file_name}"
-            )
+            new_file_path = os.path.join(output_dir, f"{self._prefix}_{file_name}")
         else:
             assert self._output_dir is not None
-            new_file_path = os.path.join(
-                self._output_dir, f"{self._prefix}_{file_name}"
-            )
+            new_file_path = os.path.join(self._output_dir, f"{self._prefix}_{file_name}")
 
         """function to load the fcs from the hard drive"""
         try:
             ignore_offset_error = False
-            fcs = FlowData(
-                file_path,
-                ignore_offset_error
-            )
+            fcs = FlowData(file_path, ignore_offset_error)
         except FCSParsingError:
             ignore_offset_error = False
             warnings.warn(
@@ -546,30 +362,21 @@ class DataHandlerFCS(DataHandler):
                 f"ignore_offset_error set to {ignore_offset_error}. "
                 "Parameter is set to True."
             )
-            fcs = FlowData(
-                file_path,
-                ignore_offset_error = True
-            )
+            fcs = FlowData(file_path, ignore_offset_error=True)
 
         channels: dict = fcs.channels
 
         pnn_labels = {
-            channels[channel_number]["PnN"]: int(channel_number)
-            for channel_number in channels
+            channels[channel_number]["PnN"]: int(channel_number) for channel_number in channels
         }
 
-        channel_indices = self._find_channel_indices_in_fcs(pnn_labels,
-                                                            data.columns)
-        orig_events = np.reshape(
-            np.array(fcs.events),
-            (-1, fcs.channel_count)
-        )
+        channel_indices = self._find_channel_indices_in_fcs(pnn_labels, data.columns)
+        orig_events = np.reshape(np.array(fcs.events), (-1, fcs.channel_count))
         inv_transformed: pd.DataFrame = self._provider.inverse_transform_data(data)
         orig_events[:, channel_indices] = inv_transformed.values
         fcs.events = orig_events.flatten()  # type: ignore
-        fcs.write_fcs(new_file_path, metadata = fcs.text)
+        fcs.write_fcs(new_file_path, metadata=fcs.text)
 
-        
 
 class DataHandlerAnnData(DataHandler):
     """\
@@ -608,114 +415,97 @@ class DataHandlerAnnData(DataHandler):
 
     """
 
-    def __init__(self,
-                 adata: AnnData,
-                 layer: str,
-                 reference_column: str,
-                 reference_value: str,
-                 batch_column: str,
-                 sample_identifier_column: str,
-                 channels: Union[list[str], str, Literal["all", "marker"]],
-                 transformer: Optional[Transformer] = None,
-                 key_added: str = "cyto_normalized"):
+    def __init__(
+        self,
+        adata: AnnData,
+        layer: str,
+        reference_column: str,
+        reference_value: str,
+        batch_column: str,
+        sample_identifier_column: str,
+        channels: Union[list[str], str, Literal["all", "marker"]],
+        n_cells_reference: Optional[int] = None,
+        transformer: Optional[Transformer] = None,
+        key_added: str = "cyto_normalized",
+    ):
         self.adata = adata
         self._layer = layer
         self._key_added = key_added
+        self.n_cells_reference = n_cells_reference
 
         # We copy the input data to the newly created layer
         # to ensure that non-normalized data stay as the input
         if self._key_added not in self.adata.layers:
-            self.adata.layers[self._key_added] = \
-                np.array(self.adata.layers[self._layer])
-
-        self._init_metadata_columns(
-            reference_column = reference_column,
-            reference_value = reference_value,
-            batch_column = batch_column,
-            sample_identifier_column = sample_identifier_column
-        )
+            self.adata.layers[self._key_added] = np.array(self.adata.layers[self._layer])
 
         _metadata = self._condense_metadata(
-            self.adata.obs,
-            reference_column,
-            batch_column,
-            sample_identifier_column
+            self.adata.obs, reference_column, batch_column, sample_identifier_column
         )
 
-        self._validate_metadata(_metadata)
+        self.metadata = Metadata(
+            metadata=_metadata,
+            reference_column=reference_column,
+            reference_value=reference_value,
+            batch_column=batch_column,
+            sample_identifier_column=sample_identifier_column,
+        )
 
         _provider = self._create_data_provider(
-            adata = adata,
-            layer = layer,
-            sample_identifier_column = sample_identifier_column,
-            reference_column = reference_column,
-            batch_column = batch_column,
-            metadata = _metadata,
-            channels = None, # instantiate with None as we dont know the channels yet
-            transformer = transformer
+            adata=adata,
+            layer=layer,
+            metadata=self.metadata,
+            channels=None,  # instantiate with None as we dont know the channels yet
+            transformer=transformer,
         )
 
         super().__init__(
-            channels = channels,
-            provider = _provider,
+            channels=channels,
+            provider=_provider,
         )
 
         self._provider.channels = self.channels
         self.ref_data_df = self._provider.select_channels(self.ref_data_df)
 
-        # TODO: add check for anndata obs
-
-    def _condense_metadata(self,
-                           obs: pd.DataFrame,
-                           reference_column: str,
-                           batch_column: str,
-                           sample_identifier_column: str) -> pd.DataFrame:
-        df = obs[[reference_column,
-                  batch_column,
-                  sample_identifier_column]]
+    def _condense_metadata(
+        self,
+        obs: pd.DataFrame,
+        reference_column: str,
+        batch_column: str,
+        sample_identifier_column: str,
+    ) -> pd.DataFrame:
+        df = obs[[reference_column, batch_column, sample_identifier_column]]
         df = df.drop_duplicates()
         assert isinstance(df, pd.DataFrame)
         return df
 
-    def _create_data_provider(self,
-                              adata: AnnData,
-                              layer: str,
-                              reference_column: str,
-                              batch_column: str,
-                              sample_identifier_column: str,
-                              channels: Optional[list[str]],
-                              metadata: pd.DataFrame,
-                              transformer: Optional[Transformer] = None) -> DataProviderAnnData:
+    def _create_data_provider(
+        self,
+        adata: AnnData,
+        layer: str,
+        channels: Optional[list[str]],
+        metadata: Metadata,
+        transformer: Optional[Transformer] = None,
+    ) -> DataProviderAnnData:
         return DataProviderAnnData(
-            adata = adata,
-            layer = layer,
-            sample_identifier_column = sample_identifier_column,
-            reference_column = reference_column,
-            batch_column = batch_column,
-            metadata = metadata,
-            channels = channels, # instantiate with None as we dont know the channels yet
-            transformer = transformer
+            adata=adata,
+            layer=layer,
+            metadata=metadata,
+            channels=channels,  # instantiate with None as we dont know the channels yet
+            transformer=transformer,
         )
 
-    def _find_obs_idxs(self,
-                       file_name) -> pd.Index:
+    def _find_obs_idxs(self, file_name) -> pd.Index:
         return self.adata.obs.loc[
-            self.adata.obs[self._sample_identifier_column] == file_name,
-            :
+            self.adata.obs[self.metadata.sample_identifier_column] == file_name, :
         ].index
 
-    def _get_array_indices(self,
-                           obs_idxs: pd.Index) -> np.ndarray:
+    def _get_array_indices(self, obs_idxs: pd.Index) -> np.ndarray:
         return self.adata.obs.index.get_indexer(obs_idxs)
 
-    def _copy_input_values_to_key_added(self,
-                                        idxs: np.ndarray) -> None:
-        self.adata.layers[self._key_added][idxs, :] = \
-            self.adata.layers[self._layer][idxs, :]
+    def _copy_input_values_to_key_added(self, idxs: np.ndarray) -> None:
+        self.adata.layers[self._key_added][idxs, :] = self.adata.layers[self._layer][idxs, :]
 
-    def write(self,
-              file_name: str,
-              data: pd.DataFrame) -> None:
+    def write(self, file_name: str, data: pd.DataFrame) -> None:
         """\
         Writes the data to the anndata object to the layer
         specified during setup.
@@ -741,17 +531,12 @@ class DataHandlerAnnData(DataHandler):
 
         inv_transformed: pd.DataFrame = self._provider.inverse_transform_data(data)
 
-        self.adata.layers[self._key_added][
-            np.ix_(arr_idxs, np.array(channel_indices))
-        ] = inv_transformed.values
+        self.adata.layers[self._key_added][np.ix_(arr_idxs, np.array(channel_indices))] = (
+            inv_transformed.values
+        )
 
         return
 
-    def _find_channel_indices_in_adata(self,
-                                       channels: pd.Index) -> list[int]:
+    def _find_channel_indices_in_adata(self, channels: pd.Index) -> list[int]:
         adata_channels = self.adata.var.index.tolist()
-        return [
-            adata_channels.index(channel)
-            for channel in channels
-        ]
-
+        return [adata_channels.index(channel) for channel in channels]

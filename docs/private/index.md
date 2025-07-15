@@ -13,6 +13,7 @@ splines
 quantiles
 datahandler
 dataprovider
+metadata
 warnings
 
 ```

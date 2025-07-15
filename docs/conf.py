@@ -6,19 +6,20 @@ import os
 import sys
 
 import matplotlib
+
 matplotlib.use("agg")
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'CytoNormPy'
-copyright = '2024, Tarik Exner, Nicolaj Hackert'
-author = 'Tarik Exner, Nicolaj Hackert'
+project = "CytoNormPy"
+copyright = "2024, Tarik Exner, Nicolaj Hackert"
+author = "Tarik Exner, Nicolaj Hackert"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-sys.path.insert(0, os.path.abspath('../../CytoNormPy/'))
+sys.path.insert(0, os.path.abspath("../../CytoNormPy/"))
 
 extensions = [
     "sphinxcontrib.bibtex",
@@ -29,13 +30,13 @@ extensions = [
     "sphinx_autodoc_typehints",  # needs to be after napoleon
     "nbsphinx",  # for notebook implementation
     "nbsphinx_link",  # necessary to keep vignettes outside of sphinx root directory
-    "matplotlib.sphinxext.plot_directive"  # necessary to include inline plots via documentation
+    "matplotlib.sphinxext.plot_directive",  # necessary to include inline plots via documentation
 ]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
 
-bibtex_bibfiles = ['references.bib']
+bibtex_bibfiles = ["references.bib"]
 
 # Generate the API documentation when building
 autosummary_generate = True
@@ -64,6 +65,9 @@ napoleon_custom_sections = [("Params", "Parameters")]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_book_theme'
-html_static_path = ['_static']
+html_theme = "sphinx_book_theme"
+html_static_path = ["_static"]
+html_css_files = [
+    "header_space.css",
+]
 html_title = "CytoNormPy"
