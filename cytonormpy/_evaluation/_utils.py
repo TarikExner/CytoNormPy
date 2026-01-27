@@ -39,7 +39,7 @@ def _prepare_data_anndata(
     adata: AnnData,
     file_list: Union[list[str], str],
     channels: Optional[list[str]],
-    layer: str,
+    layer: Optional[str],
     sample_identifier_column: str = "file_name",
     cell_labels: Optional[str] = None,
     transformer: Optional[Transformer] = None,
@@ -66,7 +66,7 @@ def _prepare_data_anndata(
 def _parse_anndata_dfs(
     adata: AnnData,
     file_list: Union[list[str], str],
-    layer: str,
+    layer: Optional[str],
     sample_identifier_column,
     cell_labels: Optional[str],
     transformer: Optional[Transformer],

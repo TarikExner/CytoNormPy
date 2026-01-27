@@ -13,7 +13,7 @@ def emd_comparison_from_anndata(
     adata: AnnData,
     file_list: Union[list[str], str],
     channels: Optional[list[str]],
-    orig_layer: str,
+    orig_layer: Optional[str],
     norm_layer: str,
     sample_identifier_column: str = "file_name",
     cell_labels: Optional[str] = None,
@@ -32,7 +32,7 @@ def emd_comparison_from_anndata(
     channels:
         A list of detectors to analyze.
     orig_layer
-        The layer where the original data are stored.
+        The layer where the original data are stored. If None, uses `adata.X`.
     norm_layer
         The layer where the normalized data are stored.
     sample_identifier_column
@@ -62,7 +62,7 @@ def emd_from_anndata(
     adata: AnnData,
     file_list: Union[list[str], str],
     channels: Optional[list[str]],
-    layer: str,
+    layer: Optional[str],
     sample_identifier_column: str = "file_name",
     cell_labels: Optional[str] = None,
     origin: Optional[str] = None,
@@ -80,7 +80,7 @@ def emd_from_anndata(
     channels:
         A list of detectors to analyze.
     layer
-        The layer where the data are stored.
+        The layer where the data are stored. If None, uses `adata.X`.
     sample_identifier_column
         Specifies the column in `adata.obs` in which the samples are identified.
     cell labels

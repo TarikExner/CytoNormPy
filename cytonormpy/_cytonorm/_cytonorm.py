@@ -176,7 +176,7 @@ class CytoNorm:
     def run_anndata_setup(
         self,
         adata: AnnData,
-        layer: str = "compensated",
+        layer: Optional[str] = "compensated",
         reference_column: str = "reference",
         reference_value: str = "ref",
         batch_column: str = "batch",
@@ -195,8 +195,8 @@ class CytoNorm:
         adata
             The AnnData object
         layer
-            The layer in `adata.uns` containing the compensated
-            expression values
+            The layer in `adata.layers` containing the expression values.
+            If None, uses `adata.X` directly
         reference_column
             The column in `adata.obs` that specifies whether a sample
             is used for reference and is therefore present in all batches.

@@ -418,7 +418,7 @@ class DataHandlerAnnData(DataHandler):
     def __init__(
         self,
         adata: AnnData,
-        layer: str,
+        layer: Optional[str],
         reference_column: str,
         reference_value: str,
         batch_column: str,
@@ -436,7 +436,9 @@ class DataHandlerAnnData(DataHandler):
         # We copy the input data to the newly created layer
         # to ensure that non-normalized data stay as the input
         if self._key_added not in self.adata.layers:
-            self.adata.layers[self._key_added] = np.array(self.adata.layers[self._layer])
+            # If layer is None, use adata.X; otherwise use the named layer
+            source_data = self.adata.X if self._layer is None else self.adata.layers[self._layer]
+            self.adata.layers[self._key_added] = np.array(source_data)
 
         _metadata = self._condense_metadata(
             self.adata.obs, reference_column, batch_column, sample_identifier_column
@@ -503,7 +505,9 @@ class DataHandlerAnnData(DataHandler):
         return self.adata.obs.index.get_indexer(obs_idxs)
 
     def _copy_input_values_to_key_added(self, idxs: np.ndarray) -> None:
-        self.adata.layers[self._key_added][idxs, :] = self.adata.layers[self._layer][idxs, :]
+        # If layer is None, use adata.X; otherwise use the named layer
+        source_data = self.adata.X if self._layer is None else self.adata.layers[self._layer]
+        self.adata.layers[self._key_added][idxs, :] = source_data[idxs, :]
 
     def write(self, file_name: str, data: pd.DataFrame) -> None:
         """\

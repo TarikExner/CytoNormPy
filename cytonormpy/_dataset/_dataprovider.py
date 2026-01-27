@@ -272,7 +272,7 @@ class DataProviderAnnData(DataProvider):
     def __init__(
         self,
         adata: AnnData,
-        layer: str,
+        layer: Optional[str],
         metadata: Metadata,
         channels: Optional[list[str]] = None,
         transformer: Optional[Transformer] = None,
